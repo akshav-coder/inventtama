@@ -9,6 +9,7 @@ import {
   MenuItem,
 } from "@mui/material";
 import { useState, useEffect } from "react";
+import { useSnackbar } from "../common/SnackbarProvider";
 
 const initialForm = {
   date: "",
@@ -53,6 +54,7 @@ const fieldConfig = [
 
 const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
   const [form, setForm] = useState(initialForm);
+  const showSnackbar = useSnackbar();
 
   useEffect(() => {
     setForm(initialValues || initialForm);
@@ -60,6 +62,16 @@ const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    // Prevent negative numbers for numeric fields
+    if (
+      ["quantity", "pricePerKg", "amountPaid"].includes(name) &&
+      parseFloat(value) < 0
+    ) {
+      showSnackbar(`${name} cannot be negative.`, "error");
+      return;
+    }
+
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 

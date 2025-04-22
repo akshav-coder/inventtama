@@ -2,6 +2,7 @@ import { ThemeProvider, CssBaseline } from "@mui/material";
 import AppRoutes from "./routes/AppRoutes";
 import { getTheme } from "./utils/theme";
 import { ThemeModeProvider, useThemeMode } from "./utils/ThemeContext";
+import { SnackbarProvider } from "./components/common/SnackbarProvider";
 
 const ThemedApp = () => {
   const { mode } = useThemeMode();
@@ -9,8 +10,10 @@ const ThemedApp = () => {
 
   return (
     <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AppRoutes />
+      <SnackbarProvider>
+        <CssBaseline />
+        <AppRoutes />
+      </SnackbarProvider>
     </ThemeProvider>
   );
 };
