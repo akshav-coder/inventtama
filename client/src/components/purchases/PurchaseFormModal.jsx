@@ -60,9 +60,6 @@ const validationSchema = Yup.object({
   pricePerKg: Yup.number()
     .required("Price per Kg is required")
     .min(0, "Price per Kg cannot be negative"),
-  amountPaid: Yup.number()
-    .min(0, "Amount Paid cannot be negative")
-    .required("Amount Paid is required"),
   storageDecision: Yup.string().required("Storage Decision is required"),
   notes: Yup.string(),
 });
@@ -85,6 +82,7 @@ const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
     },
     validationSchema,
     onSubmit: (values) => {
+      console.log(values);
       const quantity = parseFloat(values.quantity) || 0;
       const pricePerKg = parseFloat(values.pricePerKg) || 0;
       const amountPaid = parseFloat(values.amountPaid) || 0;
@@ -100,6 +98,7 @@ const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>{initialValues ? "Edit" : "Add"} Purchase</DialogTitle>
+      {console.log(formik)}
       <form onSubmit={formik.handleSubmit}>
         <DialogContent>
           {fieldConfig.map((field) => (

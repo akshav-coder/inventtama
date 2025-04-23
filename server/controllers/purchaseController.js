@@ -14,7 +14,9 @@ exports.createPurchase = async (req, res) => {
 // @desc Get all purchases
 exports.getPurchases = async (req, res) => {
   try {
-    const purchases = await Purchase.find().sort({ date: -1 });
+    const purchases = await Purchase.find()
+      .sort({ date: -1 })
+      .populate("supplier", "name"); // Populate supplier details with only the name field
     res.json(purchases);
   } catch (err) {
     res.status(500).json({ error: err.message });

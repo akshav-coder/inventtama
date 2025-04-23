@@ -38,6 +38,7 @@ const Purchases = () => {
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, id: null });
 
   const handleSubmit = async (formData) => {
+    console.log(formData);
     if (editItem) {
       await updatePurchase({ id: editItem._id, ...formData });
     } else {
@@ -125,7 +126,7 @@ const Purchases = () => {
               {purchases?.map((row) => (
                 <TableRow key={row._id}>
                   <TableCell>{row.date?.split("T")[0]}</TableCell>
-                  <TableCell>{row.supplierName}</TableCell>
+                  <TableCell>{row?.supplier?.name}</TableCell>
                   <TableCell>{row.tamarindType}</TableCell>
                   <TableCell>{row.quantity}</TableCell>
                   <TableCell>{row.pricePerKg}</TableCell>
