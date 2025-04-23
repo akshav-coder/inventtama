@@ -55,11 +55,11 @@ const validationSchema = Yup.object({
   supplier: Yup.string().required("Supplier is required"),
   tamarindType: Yup.string().required("Tamarind Type is required"),
   quantity: Yup.number()
-    .required("Quantity is required")
-    .min(0, "Quantity cannot be negative"),
+    .moreThan(0, "Weight must be greater than 0 kg.")
+    .required("Weight is required."),
   pricePerKg: Yup.number()
-    .required("Price per Kg is required")
-    .min(0, "Price per Kg cannot be negative"),
+    .moreThan(0, "Price must be greater than 0 rs.")
+    .required("Price is required."),
   storageDecision: Yup.string().required("Storage Decision is required"),
   notes: Yup.string(),
 });
