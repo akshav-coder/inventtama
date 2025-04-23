@@ -15,7 +15,7 @@ import { useGetSuppliersQuery } from "../../services/suppliersApi";
 import { useSnackbar } from "../common/SnackbarProvider";
 
 const fieldConfig = [
-  { name: "date", label: "Date", type: "date", grid: 4 },
+  { name: "date", label: "", type: "date", grid: 4 },
   { name: "invoice_no", label: "Invoice No", grid: 4 },
   {
     name: "supplier",
@@ -65,30 +65,37 @@ const validationSchema = Yup.object({
 });
 
 const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
+  console.log(initialValues);
   const { data: suppliers = [], isLoading } = useGetSuppliersQuery();
   const showSnackbar = useSnackbar();
 
   const formik = useFormik({
-    initialValues: initialValues || {
-      date: "",
-      invoice_no: "",
-      supplier: "",
-      tamarindType: "",
-      quantity: "",
-      pricePerKg: "",
-      amountPaid: "",
-      storageDecision: "",
-      notes: "",
-    },
+    initialValues: initialValues
+      ? {
+          ...initialValues,
+          date: new Date(initialValues.date).toISOString().split("T")[0], // Format date as YYYY-MM-DD
+          supplier: initialValues.supplier?._id || "", // Extract supplier ID
+        }
+      : {
+          date: "",
+          invoice_no: "",
+          supplier: "",
+          tamarindType: "",
+          quantity: "",
+          pricePerKg: "",
+          storageDecision: "",
+          notes: "",
+        },
     validationSchema,
+    enableReinitialize: true,
+    validateOnBlur: false,
     onSubmit: (values) => {
       console.log(values);
       const quantity = parseFloat(values.quantity) || 0;
       const pricePerKg = parseFloat(values.pricePerKg) || 0;
-      const amountPaid = parseFloat(values.amountPaid) || 0;
 
       const totalAmount = quantity * pricePerKg;
-      const remainingBalance = totalAmount - amountPaid;
+      const remainingBalance = totalAmount;
 
       onSubmit({ ...values, totalAmount, remainingBalance });
       onClose();
@@ -98,7 +105,7 @@ const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>{initialValues ? "Edit" : "Add"} Purchase</DialogTitle>
-      {console.log(formik)}
+
       <form onSubmit={formik.handleSubmit}>
         <DialogContent>
           {fieldConfig.map((field) => (
