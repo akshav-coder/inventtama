@@ -7,26 +7,23 @@ import {
   Grid,
   TextField,
   MenuItem,
+  Box,
 } from "@mui/material";
-import { useState, useEffect } from "react";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { useGetSuppliersQuery } from "../../services/suppliersApi";
 import { useSnackbar } from "../common/SnackbarProvider";
-
-const initialForm = {
-  date: "",
-  invoice_no: "",
-  supplierName: "",
-  tamarindType: "",
-  quantity: "",
-  pricePerKg: "",
-  amountPaid: "",
-  storageDecision: "",
-  notes: "",
-};
 
 const fieldConfig = [
   { name: "date", label: "Date", type: "date", grid: 4 },
   { name: "invoice_no", label: "Invoice No", grid: 4 },
-  { name: "supplierName", label: "Supplier Name", grid: 4 },
+  {
+    name: "supplier",
+    label: "Supplier",
+    select: true,
+    options: [], // Options will be dynamically populated
+    grid: 4,
+  },
   {
     name: "tamarindType",
     label: "Tamarind Type",
@@ -52,78 +49,106 @@ const fieldConfig = [
   },
 ];
 
+const validationSchema = Yup.object({
+  date: Yup.string().required("Date is required"),
+  invoice_no: Yup.string().required("Invoice No is required"),
+  supplier: Yup.string().required("Supplier is required"),
+  tamarindType: Yup.string().required("Tamarind Type is required"),
+  quantity: Yup.number()
+    .required("Quantity is required")
+    .min(0, "Quantity cannot be negative"),
+  pricePerKg: Yup.number()
+    .required("Price per Kg is required")
+    .min(0, "Price per Kg cannot be negative"),
+  amountPaid: Yup.number()
+    .min(0, "Amount Paid cannot be negative")
+    .required("Amount Paid is required"),
+  storageDecision: Yup.string().required("Storage Decision is required"),
+  notes: Yup.string(),
+});
+
 const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
-  const [form, setForm] = useState(initialForm);
+  const { data: suppliers = [], isLoading } = useGetSuppliersQuery();
   const showSnackbar = useSnackbar();
 
-  useEffect(() => {
-    setForm(initialValues || initialForm);
-  }, [initialValues, open]);
+  const formik = useFormik({
+    initialValues: initialValues || {
+      date: "",
+      invoice_no: "",
+      supplier: "",
+      tamarindType: "",
+      quantity: "",
+      pricePerKg: "",
+      amountPaid: "",
+      storageDecision: "",
+      notes: "",
+    },
+    validationSchema,
+    onSubmit: (values) => {
+      const quantity = parseFloat(values.quantity) || 0;
+      const pricePerKg = parseFloat(values.pricePerKg) || 0;
+      const amountPaid = parseFloat(values.amountPaid) || 0;
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+      const totalAmount = quantity * pricePerKg;
+      const remainingBalance = totalAmount - amountPaid;
 
-    // Prevent negative numbers for numeric fields
-    if (
-      ["quantity", "pricePerKg", "amountPaid"].includes(name) &&
-      parseFloat(value) < 0
-    ) {
-      showSnackbar(`${name} cannot be negative.`, "error");
-      return;
-    }
-
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = () => {
-    const quantity = parseFloat(form.quantity) || 0;
-    const pricePerKg = parseFloat(form.pricePerKg) || 0;
-    const amountPaid = parseFloat(form.amountPaid) || 0;
-
-    const totalAmount = quantity * pricePerKg;
-    const remainingBalance = totalAmount - amountPaid;
-
-    onSubmit({ ...form, totalAmount, remainingBalance });
-    onClose();
-  };
+      onSubmit({ ...values, totalAmount, remainingBalance });
+      onClose();
+    },
+  });
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>{initialValues ? "Edit" : "Add"} Purchase</DialogTitle>
-      <DialogContent>
-        <Grid container spacing={2} mt={1}>
+      <form onSubmit={formik.handleSubmit}>
+        <DialogContent>
           {fieldConfig.map((field) => (
-            <Grid size={{ xs: 12, sm: 6, md: field.grid }} key={field.name}>
+            <Box key={field.name} mb={2}>
               <TextField
                 fullWidth
                 name={field.name}
                 label={field.label}
                 type={field.type || "text"}
-                value={form[field.name]}
-                onChange={handleChange}
+                value={formik.values[field.name]}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
                 multiline={field.multiline || false}
                 rows={field.rows || 1}
                 select={field.select || false}
+                disabled={field.name === "supplier" && isLoading}
+                error={
+                  formik.touched[field.name] &&
+                  Boolean(formik.errors[field.name])
+                }
+                helperText={
+                  formik.touched[field.name] && formik.errors[field.name]
+                }
               >
                 {field.select &&
-                  field.options.map((opt) => (
-                    <MenuItem key={opt} value={opt}>
-                      {opt}
-                    </MenuItem>
-                  ))}
+                  (field.name === "supplier"
+                    ? suppliers.map((supplier) => (
+                        <MenuItem key={supplier._id} value={supplier._id}>
+                          {supplier.name}
+                        </MenuItem>
+                      ))
+                    : field.options.map((opt) => (
+                        <MenuItem key={opt} value={opt}>
+                          {opt}
+                        </MenuItem>
+                      )))}
               </TextField>
-            </Grid>
+            </Box>
           ))}
-        </Grid>
-      </DialogContent>
-      <DialogActions>
-        <Button variant="outlined" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button variant="contained" onClick={handleSubmit}>
-          {initialValues ? "Update" : "Create"}
-        </Button>
-      </DialogActions>
+        </DialogContent>
+        <DialogActions>
+          <Button variant="outlined" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="contained" type="submit">
+            {initialValues ? "Update" : "Create"}
+          </Button>
+        </DialogActions>
+      </form>
     </Dialog>
   );
 };

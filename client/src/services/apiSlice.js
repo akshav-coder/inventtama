@@ -18,6 +18,7 @@ export const apiSlice = createApi({
     "Processing",
     "Transfer",
     "Sales",
+    "Supplier",
     "WholesaleCredit",
     "SupplierCredit",
     "SeedSales",

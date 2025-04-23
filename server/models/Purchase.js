@@ -6,8 +6,10 @@ const purchaseSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-    supplierName: {
-      type: String,
+
+    supplier: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Supplier",
       required: true,
     },
     invoice_no: {

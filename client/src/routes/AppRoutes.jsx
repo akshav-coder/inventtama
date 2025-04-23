@@ -12,6 +12,7 @@ import Inventory from "../pages/Inventory";
 import Login from "../pages/Login";
 import PrivateRoute from "./PrivateRoute";
 import Dashboard from "../pages/Dashboard";
+import AdminControl from "../pages/AdminControl";
 
 const AppRoutes = () => {
   return (
@@ -32,6 +33,7 @@ const AppRoutes = () => {
           <Route path="/supplier-credit" element={<SupplierCredit />} />
           <Route path="/seed-sales" element={<SeedSales />} />
           <Route path="/inventory" element={<Inventory />} />
+          <Route path="/admin-control" element={<AdminControl />} />
         </Route>
       </Route>
     </Routes>

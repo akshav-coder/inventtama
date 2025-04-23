@@ -12,7 +12,7 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 import Sidebar from "./Sidebar";
 import { useState } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { AccountCircle, Brightness4, Brightness7 } from "@mui/icons-material";
 import { logout } from "../features/auth/authSlice";
@@ -74,6 +74,13 @@ const MainLayout = ({ children }) => {
               >
                 <MenuItem disabled>
                   {user.name} ({user.role})
+                </MenuItem>
+                <MenuItem
+                  component={Link}
+                  to="/admin-control"
+                  onClick={() => setAnchorEl(null)}
+                >
+                  Admin Control
                 </MenuItem>
                 <MenuItem onClick={handleLogout}>Logout</MenuItem>
               </Menu>
