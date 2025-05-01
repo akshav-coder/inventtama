@@ -23,7 +23,7 @@ app.use(express.json());
 
 // Routes
 app.use("/api/purchases", purchaseRoutes);
-app.use("/api/storage", storageRoutes);
+app.use("/api/storage-options", storageRoutes);
 app.use("/api/processing", processingRoutes);
 app.use("/api/unit-transfers", unitTransferRoutes);
 app.use("/api/sales", saleRoutes);

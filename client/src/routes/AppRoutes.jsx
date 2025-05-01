@@ -1,7 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import Purchases from "../pages/Purchases";
-import Storage from "../pages/Storage";
 import Processing from "../pages/Processing";
 import Transfers from "../pages/Transfers";
 import Sales from "../pages/Sales";
@@ -25,7 +24,6 @@ const AppRoutes = () => {
         <Route element={<MainLayout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/purchases" element={<Purchases />} />
-          <Route path="/storage" element={<Storage />} />
           <Route path="/processing" element={<Processing />} />
           <Route path="/transfers" element={<Transfers />} />
           <Route path="/sales" element={<Sales />} />

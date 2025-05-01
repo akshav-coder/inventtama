@@ -18,4 +18,14 @@ export const getTheme = (mode) =>
     typography: {
       fontFamily: "Manrope, sans-serif",
     },
+    components: {
+      MuiButton: {
+        styleOverrides: {
+          root: {
+            color: "#ffffff", // Set button font color to white
+            fontWeight: 700,
+          },
+        },
+      },
+    },
   });
