@@ -1,13 +1,62 @@
 const Purchase = require("../models/Purchase");
+const StoreEntry = require("../models/StoreEntry");
+const Lot = require("../models/Lot");
 
-// @desc Create a new purchase
 exports.createPurchase = async (req, res) => {
+  const session = await Purchase.startSession();
+  session.startTransaction();
   try {
-    const purchase = new Purchase(req.body);
-    const saved = await purchase.save();
-    res.status(201).json(saved);
+    const { storageEntries, ...purchaseData } = req.body;
+
+    const purchase = new Purchase(purchaseData);
+    const savedPurchase = await purchase.save({ session });
+
+    if (!Array.isArray(storageEntries) || storageEntries.length === 0) {
+      throw new Error("Storage entries are required.");
+    }
+
+    for (const entry of storageEntries) {
+      const { facility_id, weight, materialType, lot_number } = entry;
+
+      if (!facility_id || !weight || !materialType) {
+        throw new Error("Missing fields in storage entry.");
+      }
+
+      if (lot_number) {
+        const existingLot = await Lot.findOne({
+          name: lot_number,
+          facility_id,
+        });
+        if (!existingLot) {
+          const newLot = new Lot({ name: lot_number, facility_id });
+          await newLot.save({ session });
+        }
+      }
+
+      await StoreEntry.create(
+        [
+          {
+            purchase_id: savedPurchase._id,
+            facility_id,
+            weight,
+            materialType,
+            lot_number: lot_number || null,
+          },
+        ],
+        { session }
+      );
+    }
+
+    await session.commitTransaction();
+    res.status(201).json({
+      message: "Purchase created with storage entries",
+      purchase: savedPurchase,
+    });
   } catch (err) {
+    await session.abortTransaction();
     res.status(400).json({ error: err.message });
+  } finally {
+    session.endSession();
   }
 };
 

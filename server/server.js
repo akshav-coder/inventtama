@@ -10,7 +10,6 @@ const saleRoutes = require("./routes/saleRoutes");
 const wholesaleCreditRoutes = require("./routes/wholesaleCreditRoutes");
 const supplierCreditRoutes = require("./routes/supplierCreditRoutes");
 const seedSaleRoutes = require("./routes/seedSaleRoutes");
-const inventoryRoutes = require("./routes/inventoryRoutes");
 const authRoutes = require("./routes/authRoutes");
 const supplierRoutes = require("./routes/supplierRoutes");
 
@@ -30,9 +29,11 @@ app.use("/api/sales", saleRoutes);
 app.use("/api/wholesale-credit", wholesaleCreditRoutes);
 app.use("/api/supplier-credit", supplierCreditRoutes);
 app.use("/api/seed-sales", seedSaleRoutes);
-app.use("/api/inventory", inventoryRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/suppliers", supplierRoutes);
+app.use("/api/purchases", require("./routes/purchaseRoutes"));
+app.use("/api/facilities", require("./routes/facilityRoutes")); // ✅ Add this
+app.use("/api/lots", require("./routes/lotRoutes"));
 
 app.get("/", (req, res) => {
   res.send("Tamarind Tracker API is running...");

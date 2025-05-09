@@ -22,8 +22,11 @@ export const getTheme = (mode) =>
       MuiButton: {
         styleOverrides: {
           root: {
-            color: "#ffffff", // Set button font color to white
+            color: "#ffffff",
             fontWeight: 700,
+          },
+          outlined: {
+            color: "#ff6f00",
           },
         },
       },

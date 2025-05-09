@@ -94,10 +94,13 @@ const Purchases = () => {
           Are you sure you want to delete this purchase?
         </DialogTitle>
         <DialogActions>
-          <Button onClick={() => setDeleteConfirm({ open: false, id: null })}>
+          <Button
+            variant="outlined"
+            onClick={() => setDeleteConfirm({ open: false, id: null })}
+          >
             Cancel
           </Button>
-          <Button color="error" onClick={confirmDelete}>
+          <Button variant="contained" color="error" onClick={confirmDelete}>
             Delete
           </Button>
         </DialogActions>
@@ -115,8 +118,8 @@ const Purchases = () => {
                 <TableCell>Type</TableCell>
                 <TableCell>Qty (Kg)</TableCell>
                 <TableCell>₹/Kg</TableCell>
-                <TableCell>Total</TableCell>
-                <TableCell>Balance</TableCell>
+                <TableCell>Total Amount</TableCell>
+                <TableCell>Balance Amount</TableCell>
                 <TableCell>Storage</TableCell>
                 <TableCell>Notes</TableCell>
                 <TableCell align="center">Actions</TableCell>

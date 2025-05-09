@@ -7,7 +7,6 @@ import Sales from "../pages/Sales";
 import WholesaleCredit from "../pages/WholesaleCredit";
 import SupplierCredit from "../pages/SupplierCredit";
 import SeedSales from "../pages/SeedSales";
-import Inventory from "../pages/Inventory";
 import Login from "../pages/Login";
 import PrivateRoute from "./PrivateRoute";
 import Dashboard from "../pages/Dashboard";
@@ -30,7 +29,6 @@ const AppRoutes = () => {
           <Route path="/wholesale-credit" element={<WholesaleCredit />} />
           <Route path="/supplier-credit" element={<SupplierCredit />} />
           <Route path="/seed-sales" element={<SeedSales />} />
-          <Route path="/inventory" element={<Inventory />} />
           <Route path="/admin-control" element={<AdminControl />} />
         </Route>
       </Route>

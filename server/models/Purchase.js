@@ -33,17 +33,8 @@ const purchaseSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    // amountPaid: {
-    //   type: Number,
-    //   required: true,
-    // },
     remainingBalance: {
       type: Number,
-      required: true,
-    },
-    storageDecision: {
-      type: String,
-      enum: ["Cold", "Direct Use"],
       required: true,
     },
     notes: {
