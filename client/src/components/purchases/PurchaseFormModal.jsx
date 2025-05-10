@@ -59,6 +59,17 @@ const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
     enableReinitialize: true,
     validateOnBlur: false,
     onSubmit: (values) => {
+      const totalWeight = values.storageEntries.reduce(
+        (sum, entry) => sum + (parseFloat(entry.weight) || 0),
+        0
+      );
+      if (totalWeight !== parseFloat(values.quantity)) {
+        showSnackbar(
+          "Total weight of storage entries must match the total quantity.",
+          "error"
+        );
+        return;
+      }
       const totalAmount = values.quantity * values.pricePerKg;
       const remainingBalance = totalAmount;
       onSubmit({ ...values, totalAmount, remainingBalance });
