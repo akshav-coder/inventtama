@@ -1,4 +1,5 @@
 const Lot = require("../models/Lot");
+const Storage = require("../models/Storage");
 
 exports.getLotsByFacility = async (req, res) => {
   try {
@@ -13,6 +14,16 @@ exports.getLotsByFacility = async (req, res) => {
 
 exports.createLot = async (req, res) => {
   try {
+    // Check if the referenced storage is of type 'cold'
+    const storage = await Storage.findById(req.body.coldStorageId);
+    if (!storage) {
+      return res.status(400).json({ error: "Storage not found" });
+    }
+    if (storage.type !== "cold") {
+      return res
+        .status(400)
+        .json({ error: "Lots can only be added to cold storages" });
+    }
     const newLot = new Lot(req.body);
     const saved = await newLot.save();
     res.status(201).json(saved);
