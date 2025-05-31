@@ -20,6 +20,7 @@ import {
   People,
   EmojiNature,
   PeopleOutlineOutlined,
+  Diversity3Outlined,
 } from "@mui/icons-material";
 import { Link } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
@@ -40,7 +41,11 @@ const menuItems = [
     icon: <PeopleOutlineOutlined />,
     path: "/supplier-management",
   },
-  { text: "Byproduct Sales", icon: <EmojiNature />, path: "/seed-sales" },
+  {
+    text: "Customer Management",
+    icon: <Diversity3Outlined />,
+    path: "/customer-management",
+  },
 ];
 
 const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {

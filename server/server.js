@@ -12,6 +12,7 @@ const supplierCreditRoutes = require("./routes/supplierCreditRoutes");
 const seedSaleRoutes = require("./routes/seedSaleRoutes");
 const authRoutes = require("./routes/authRoutes");
 const supplierRoutes = require("./routes/supplierRoutes");
+const customerRoutes = require("./routes/CustomerRoutes");
 
 dotenv.config();
 connectDB();
@@ -31,6 +32,7 @@ app.use("/api/supplier-credit", supplierCreditRoutes);
 app.use("/api/seed-sales", seedSaleRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/suppliers", supplierRoutes);
+app.use("/api/customers", customerRoutes);
 app.use("/api/purchases", require("./routes/purchaseRoutes"));
 app.use("/api/facilities", require("./routes/facilityRoutes")); // ✅ Add this
 app.use("/api/lots", require("./routes/lotRoutes"));
