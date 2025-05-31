@@ -1,31 +1,57 @@
 const Supplier = require("../models/Supplier");
 
-exports.addSupplier = async (req, res) => {
+exports.getAllSuppliers = async (req, res) => {
   try {
-    const { name } = req.body;
-    if (!name)
-      return res.status(400).json({ message: "Supplier name is required" });
-
-    const newSupplier = new Supplier({ name });
-    await newSupplier.save();
-
-    res
-      .status(201)
-      .json({ message: "Supplier added successfully", supplier: newSupplier });
+    const suppliers = await Supplier.find();
+    res.status(200).json(suppliers);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error adding supplier", error: error.message });
+    res.status(500).json({ error: "Failed to fetch suppliers" });
   }
 };
 
-exports.getSuppliers = async (req, res) => {
+exports.getSupplierById = async (req, res) => {
   try {
-    const suppliers = await Supplier.find().select("_id name");
-    res.status(200).json(suppliers);
+    const supplier = await Supplier.findById(req.params.id);
+    if (!supplier) return res.status(404).json({ error: "Supplier not found" });
+    res.status(200).json(supplier);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch supplier" });
+  }
+};
+
+exports.createSupplier = async (req, res) => {
+  try {
+    const newSupplier = new Supplier(req.body);
+    const saved = await newSupplier.save();
+    res.status(201).json(saved);
   } catch (error) {
     res
-      .status(500)
-      .json({ message: "Error fetching suppliers", error: error.message });
+      .status(400)
+      .json({ error: "Failed to create supplier", details: error.message });
+  }
+};
+
+exports.updateSupplier = async (req, res) => {
+  try {
+    const updated = await Supplier.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!updated) return res.status(404).json({ error: "Supplier not found" });
+    res.status(200).json(updated);
+  } catch (error) {
+    res
+      .status(400)
+      .json({ error: "Failed to update supplier", details: error.message });
+  }
+};
+
+exports.deleteSupplier = async (req, res) => {
+  try {
+    const deleted = await Supplier.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ error: "Supplier not found" });
+    res.status(200).json({ message: "Supplier deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to delete supplier" });
   }
 };

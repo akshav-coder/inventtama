@@ -11,6 +11,7 @@ import Login from "../pages/Login";
 import PrivateRoute from "./PrivateRoute";
 import Dashboard from "../pages/Dashboard";
 import AdminControl from "../pages/AdminControl";
+import SupplierPage from "../pages/SupplierPage";
 
 const AppRoutes = () => {
   return (
@@ -30,6 +31,7 @@ const AppRoutes = () => {
           <Route path="/supplier-credit" element={<SupplierCredit />} />
           <Route path="/seed-sales" element={<SeedSales />} />
           <Route path="/admin-control" element={<AdminControl />} />
+          <Route path="/supplier-management" element={<SupplierPage />} />
         </Route>
       </Route>
     </Routes>

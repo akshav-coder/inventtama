@@ -19,9 +19,11 @@ import {
   Inventory,
   People,
   EmojiNature,
+  PeopleOutlineOutlined,
 } from "@mui/icons-material";
 import { Link } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
+import SupplierPage from "../pages/SupplierPage";
 
 const drawerWidth = 240;
 
@@ -33,7 +35,11 @@ const menuItems = [
   { text: "Sales", icon: <AccountBalance />, path: "/sales" },
   { text: "Reciept", icon: <People />, path: "/wholesale-credit" },
   { text: "Payment", icon: <People />, path: "/supplier-credit" },
-  { text: "Inventory", icon: <Inventory />, path: "/inventory" },
+  {
+    text: "Supplier Management",
+    icon: <PeopleOutlineOutlined />,
+    path: "/supplier-management",
+  },
   { text: "Byproduct Sales", icon: <EmojiNature />, path: "/seed-sales" },
 ];
 
