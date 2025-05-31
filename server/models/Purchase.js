@@ -1,50 +1,75 @@
+// models/Purchase.model.js
 const mongoose = require("mongoose");
 
 const purchaseSchema = new mongoose.Schema(
   {
-    date: {
-      type: Date,
-      required: true,
-    },
-
-    supplier: {
+    supplierId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Supplier",
       required: true,
     },
-    invoice_no: {
+    invoiceNumber: {
       type: String,
       required: true,
     },
-    tamarindType: {
+    purchaseDate: {
+      type: Date,
+      default: Date.now,
+    },
+    remarks: String,
+    tamarindItems: [
+      {
+        type: {
+          type: String,
+          required: true,
+        },
+        quantity: {
+          type: Number,
+          required: true,
+        },
+        rate: {
+          type: Number,
+          required: true,
+        },
+        allocation: [
+          {
+            storageId: {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: "Storage",
+              required: true,
+            },
+            quantity: {
+              type: Number,
+              required: true,
+            },
+            lotId: {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: "Lot",
+            },
+          },
+        ],
+        pricePerKg: {
+          type: Number,
+        },
+        totalAmount: {
+          type: Number,
+        },
+        notes: {
+          type: String,
+        },
+      },
+    ],
+    paymentType: {
       type: String,
-      enum: ["Whole", "Raw Pod"],
-      required: true,
+      enum: ["cash", "credit"],
+      default: "credit",
     },
-    quantity: {
-      type: Number,
-      required: true,
-    },
-    pricePerKg: {
-      type: Number,
-      required: true,
-    },
-    totalAmount: {
-      type: Number,
-      required: true,
-    },
-    remainingBalance: {
-      type: Number,
-      required: true,
-    },
-    notes: {
-      type: String,
-      default: "",
-    },
+    totalAmount: Number,
   },
   {
     timestamps: true,
   }
 );
 
-module.exports = mongoose.model("Purchase", purchaseSchema);
+const Purchase = mongoose.model("Purchase", purchaseSchema);
+module.exports = Purchase;

@@ -21,6 +21,10 @@ import {
   EmojiNature,
   PeopleOutlineOutlined,
   Diversity3Outlined,
+  ReceiptLong,
+  Payment,
+  Business,
+  PeopleAlt,
 } from "@mui/icons-material";
 import { Link } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
@@ -34,16 +38,16 @@ const menuItems = [
   { text: "Transfers", icon: <LocalOffer />, path: "/transfers" },
   { text: "Processing", icon: <Factory />, path: "/processing" },
   { text: "Sales", icon: <AccountBalance />, path: "/sales" },
-  { text: "Reciept", icon: <People />, path: "/wholesale-credit" },
-  { text: "Payment", icon: <People />, path: "/supplier-credit" },
+  { text: "Reciept", icon: <ReceiptLong />, path: "/wholesale-credit" },
+  { text: "Payment", icon: <Payment />, path: "/supplier-credit" },
   {
     text: "Supplier Management",
-    icon: <PeopleOutlineOutlined />,
+    icon: <Business />,
     path: "/supplier-management",
   },
   {
     text: "Customer Management",
-    icon: <Diversity3Outlined />,
+    icon: <PeopleAlt />,
     path: "/customer-management",
   },
   {

@@ -1,13 +1,13 @@
 import { Box, Typography, Grid, Paper, CircularProgress } from "@mui/material";
 import InventoryChart from "../components/dashboard/InventoryChart";
 import CreditChart from "../components/dashboard/CreditChart";
-import { useGetPurchasesQuery } from "../services/purchaseApi";
+import { useGetAllPurchasesQuery } from "../services/purchaseApi";
 import { useGetSalesQuery } from "../services/salesApi";
 import { useGetWholesaleCreditsQuery } from "../services/wholesaleCreditApi";
 import { useGetSupplierCreditsQuery } from "../services/supplierCreditApi";
 
 const Dashboard = () => {
-  const { data: purchases } = useGetPurchasesQuery();
+  const { data: purchases } = useGetAllPurchasesQuery();
   const { data: sales } = useGetSalesQuery();
   const { data: wholesaleCredits } = useGetWholesaleCreditsQuery();
   const { data: supplierCredits } = useGetSupplierCreditsQuery();

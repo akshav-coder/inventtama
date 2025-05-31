@@ -17,7 +17,7 @@ import {
   DialogActions,
 } from "@mui/material";
 import {
-  useGetPurchasesQuery,
+  useGetAllPurchasesQuery,
   useCreatePurchaseMutation,
   useDeletePurchaseMutation,
 } from "../services/purchaseApi";
@@ -28,7 +28,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { useUpdatePurchaseMutation } from "../services/purchaseApi";
 
 const Purchases = () => {
-  const { data: purchases, isLoading } = useGetPurchasesQuery();
+  const { data: purchases, isLoading } = useGetAllPurchasesQuery();
   const [createPurchase] = useCreatePurchaseMutation();
   const [deletePurchase] = useDeletePurchaseMutation();
   const [updatePurchase] = useUpdatePurchaseMutation();
@@ -119,42 +119,60 @@ const Purchases = () => {
                 <TableCell>Qty (Kg)</TableCell>
                 <TableCell>₹/Kg</TableCell>
                 <TableCell>Total Amount</TableCell>
-                <TableCell>Balance Amount</TableCell>
+                <TableCell>Payment Type</TableCell>
                 <TableCell>Storage</TableCell>
                 <TableCell>Notes</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {purchases?.map((row) => (
-                <TableRow key={row._id}>
-                  <TableCell>{row.date?.split("T")[0]}</TableCell>
-                  <TableCell>{row?.supplier?.name}</TableCell>
-                  <TableCell>{row.tamarindType}</TableCell>
-                  <TableCell>{row.quantity}</TableCell>
-                  <TableCell>{row.pricePerKg}</TableCell>
-                  <TableCell>{row.totalAmount}</TableCell>
-                  <TableCell>{row.remainingBalance}</TableCell>
-                  <TableCell>{row.storageDecision}</TableCell>
-                  <TableCell>{row.notes}</TableCell>
-                  <TableCell align="center">
-                    <Tooltip title="Edit">
-                      <IconButton onClick={() => handleEdit(row)} size="small">
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton
-                        onClick={() => handleDelete(row._id)}
-                        size="small"
-                        color="error"
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {purchases?.map((purchase) =>
+                purchase.tamarindItems?.map((item, idx) => (
+                  <TableRow key={`${purchase._id}-${idx}`}>
+                    <TableCell>
+                      {new Date(purchase.purchaseDate).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>{purchase.supplierId?.name || "-"}</TableCell>
+                    <TableCell>{item.type}</TableCell>
+                    <TableCell>{item.quantity}</TableCell>
+                    <TableCell>{item.pricePerKg}</TableCell>
+                    <TableCell>
+                      {item.totalAmount || purchase.totalAmount}
+                    </TableCell>
+                    <TableCell>{purchase.paymentType}</TableCell>
+                    <TableCell>
+                      {item.allocation?.map((alloc, i) =>
+                        alloc.storageId?.name || alloc.storageId ? (
+                          <span key={i}>
+                            {alloc.storageId?.name || alloc.storageId}
+                            {i < item.allocation.length - 1 ? ", " : ""}
+                          </span>
+                        ) : null
+                      )}
+                    </TableCell>
+                    <TableCell>{item.notes}</TableCell>
+                    <TableCell align="center">
+                      <Tooltip title="Edit">
+                        <IconButton
+                          onClick={() => handleEdit(purchase)}
+                          size="small"
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete">
+                        <IconButton
+                          onClick={() => handleDelete(purchase._id)}
+                          size="small"
+                          color="error"
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>

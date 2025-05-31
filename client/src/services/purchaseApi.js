@@ -2,8 +2,13 @@ import { apiSlice } from "./apiSlice";
 
 export const purchaseApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getPurchases: builder.query({
+    getAllPurchases: builder.query({
       query: () => "/purchases",
+      providesTags: ["Purchase"],
+    }),
+
+    getPurchaseById: builder.query({
+      query: (id) => `/purchases/${id}`,
       providesTags: ["Purchase"],
     }),
 
@@ -36,7 +41,8 @@ export const purchaseApi = apiSlice.injectEndpoints({
 });
 
 export const {
-  useGetPurchasesQuery,
+  useGetAllPurchasesQuery,
+  useGetPurchaseByIdQuery,
   useCreatePurchaseMutation,
   useUpdatePurchaseMutation,
   useDeletePurchaseMutation,

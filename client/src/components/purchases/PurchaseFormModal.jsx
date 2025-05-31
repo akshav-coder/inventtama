@@ -10,6 +10,8 @@ import {
   MenuItem,
   Box,
   IconButton,
+  Typography,
+  Divider,
 } from "@mui/material";
 import { AddCircle, RemoveCircle } from "@mui/icons-material";
 import { useFormik } from "formik";
@@ -18,81 +20,173 @@ import { useGetSuppliersQuery } from "../../services/suppliersApi";
 import { useGetFacilitiesQuery } from "../../services/facilityApi";
 import { useSnackbar } from "../common/SnackbarProvider";
 import { useState, useEffect } from "react";
+import { useGetLotsQuery, useCreateLotMutation } from "../../services/lotapi";
+import { Dialog as MuiDialog } from "@mui/material";
+
+const allocationSchema = Yup.object({
+  storageId: Yup.string().required("Facility is required"),
+  quantity: Yup.number().moreThan(0).required("Weight is required"),
+  materialType: Yup.string().required("Material type is required"),
+  lot_number: Yup.string().nullable(),
+});
+
+const tamarindItemSchema = Yup.object({
+  type: Yup.string().required("Tamarind Type is required"),
+  quantity: Yup.number().moreThan(0).required("Quantity is required"),
+  rate: Yup.number().moreThan(0).required("Rate is required"),
+  pricePerKg: Yup.number().moreThan(0).required("Price per Kg is required"),
+  allocation: Yup.array()
+    .of(allocationSchema)
+    .min(1, "At least one allocation is required"),
+  notes: Yup.string(),
+});
 
 const validationSchema = Yup.object({
-  date: Yup.string().required("Date is required"),
-  invoice_no: Yup.string().required("Invoice No is required"),
-  supplier: Yup.string().required("Supplier is required"),
-  tamarindType: Yup.string().required("Tamarind Type is required"),
-  quantity: Yup.number().moreThan(0).required("Quantity is required"),
-  pricePerKg: Yup.number().moreThan(0).required("Price is required"),
-  storageEntries: Yup.array()
-    .of(
-      Yup.object({
-        facility_id: Yup.string().required("Facility is required"),
-        weight: Yup.number().moreThan(0).required("Weight is required"),
-        materialType: Yup.string().required("Material type is required"),
-        lot_number: Yup.string().nullable(),
-      })
-    )
-    .min(1, "At least one storage entry is required"),
+  purchaseDate: Yup.string().required("Date is required"),
+  invoiceNumber: Yup.string().required("Invoice No is required"),
+  supplierId: Yup.string().required("Supplier is required"),
+  paymentType: Yup.string().required("Payment type is required"),
+  remarks: Yup.string(),
+  tamarindItems: Yup.array()
+    .of(tamarindItemSchema)
+    .min(1, "At least one tamarind item is required"),
 });
+
+const defaultTamarindItem = {
+  type: "",
+  quantity: "",
+  rate: "",
+  pricePerKg: "",
+  allocation: [
+    { storageId: "", quantity: "", materialType: "", lot_number: "" },
+  ],
+  notes: "",
+};
 
 const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
   const { data: suppliers = [] } = useGetSuppliersQuery();
   const { data: facilities = [] } = useGetFacilitiesQuery();
   const showSnackbar = useSnackbar();
+  const [selectedFacilityType, setSelectedFacilityType] = useState({});
+  const [lotDialogOpen, setLotDialogOpen] = useState(false);
+  const [lotFacilityId, setLotFacilityId] = useState("");
+  const [newLot, setNewLot] = useState({
+    lotNumber: "",
+    tamarindType: "",
+    quantity: "",
+    coldStorageId: "",
+  });
+  const [createLot] = useCreateLotMutation();
+  const [lotsFacilityId, setLotsFacilityId] = useState("");
+  const { data: lots = [] } = useGetLotsQuery(lotsFacilityId, {
+    skip: !lotsFacilityId,
+  });
 
   const formik = useFormik({
     initialValues: initialValues || {
-      date: "",
-      invoice_no: "",
-      supplier: "",
-      tamarindType: "",
-      quantity: "",
-      pricePerKg: "",
-      storageEntries: [
-        { facility_id: "", weight: "", materialType: "", lot_number: "" },
-      ],
+      purchaseDate: "",
+      invoiceNumber: "",
+      supplierId: "",
+      paymentType: "credit",
+      remarks: "",
+      tamarindItems: [JSON.parse(JSON.stringify(defaultTamarindItem))],
     },
     validationSchema,
     enableReinitialize: true,
     validateOnBlur: false,
     onSubmit: (values) => {
-      const totalWeight = values.storageEntries.reduce(
-        (sum, entry) => sum + (parseFloat(entry.weight) || 0),
-        0
-      );
-      if (totalWeight !== parseFloat(values.quantity)) {
-        showSnackbar(
-          "Total weight of storage entries must match the total quantity.",
-          "error"
+      // Validate allocations sum for each tamarind item
+      for (const [idx, item] of values.tamarindItems.entries()) {
+        const totalAlloc = item.allocation.reduce(
+          (sum, a) => sum + (parseFloat(a.quantity) || 0),
+          0
         );
-        return;
+        if (totalAlloc !== parseFloat(item.quantity)) {
+          showSnackbar(
+            `Total allocation for item #${idx + 1} must match its quantity.`,
+            "error"
+          );
+          return;
+        }
       }
-      const totalAmount = values.quantity * values.pricePerKg;
-      const remainingBalance = totalAmount;
-      onSubmit({ ...values, totalAmount, remainingBalance });
+      // Calculate totalAmount for each item
+      const tamarindItems = values.tamarindItems.map((item) => ({
+        ...item,
+        totalAmount: parseFloat(item.quantity) * parseFloat(item.pricePerKg),
+        allocation: item.allocation.map((a) => {
+          const { lot_number, ...rest } = a;
+          return lot_number ? { ...rest, lotNumber: lot_number } : rest;
+        }),
+      }));
+      const payload = {
+        ...values,
+        tamarindItems,
+      };
+      onSubmit(payload);
       onClose();
     },
   });
 
-  const handleAddEntry = () => {
-    const newEntries = [...formik.values.storageEntries];
-    newEntries.push({
-      facility_id: "",
-      weight: "",
+  // Track facility type for each allocation
+  useEffect(() => {
+    const typeMap = {};
+    formik.values.tamarindItems.forEach((item, idx) => {
+      item.allocation.forEach((alloc, aIdx) => {
+        const fac = facilities.find((f) => f._id === alloc.storageId);
+        if (fac) typeMap[`${idx}-${aIdx}`] = fac.type;
+      });
+    });
+    setSelectedFacilityType(typeMap);
+  }, [formik.values.tamarindItems, facilities]);
+
+  const handleAddTamarindItem = () => {
+    formik.setFieldValue("tamarindItems", [
+      ...formik.values.tamarindItems,
+      JSON.parse(JSON.stringify(defaultTamarindItem)),
+    ]);
+  };
+
+  const handleRemoveTamarindItem = (idx) => {
+    const arr = formik.values.tamarindItems.filter((_, i) => i !== idx);
+    formik.setFieldValue("tamarindItems", arr);
+  };
+
+  const handleAddAllocation = (itemIdx) => {
+    const arr = [...formik.values.tamarindItems];
+    arr[itemIdx].allocation.push({
+      storageId: "",
+      quantity: "",
       materialType: "",
       lot_number: "",
     });
-    formik.setFieldValue("storageEntries", newEntries);
+    formik.setFieldValue("tamarindItems", arr);
   };
 
-  const handleRemoveEntry = (index) => {
-    const newEntries = formik.values.storageEntries.filter(
-      (_, i) => i !== index
+  const handleRemoveAllocation = (itemIdx, allocIdx) => {
+    const arr = [...formik.values.tamarindItems];
+    arr[itemIdx].allocation = arr[itemIdx].allocation.filter(
+      (_, i) => i !== allocIdx
     );
-    formik.setFieldValue("storageEntries", newEntries);
+    formik.setFieldValue("tamarindItems", arr);
+  };
+
+  const handleLotDropdownOpen = (facilityId) => {
+    setLotsFacilityId(facilityId);
+  };
+
+  const handleCreateLot = async () => {
+    if (!newLot.lotNumber || !newLot.tamarindType || !newLot.quantity) return;
+    const res = await createLot({ ...newLot, coldStorageId: lotFacilityId });
+    setLotDialogOpen(false);
+    setNewLot({
+      lotNumber: "",
+      tamarindType: "",
+      quantity: "",
+      coldStorageId: "",
+    });
+    setLotsFacilityId(lotFacilityId); // refetch lots
+    // Optionally, set the new lot in the allocation field
+    // You may want to update the allocation field here if needed
   };
 
   return (
@@ -100,47 +194,41 @@ const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
       <DialogTitle>{initialValues ? "Edit" : "Add"} Purchase</DialogTitle>
       <form onSubmit={formik.handleSubmit}>
         <DialogContent>
-          <Grid
-            container
-            spacing={{ xs: 2, md: 3 }}
-            columns={{ xs: 4, sm: 8, md: 12 }}
-          >
-            <Grid size={{ xs: 4, sm: 4, md: 6 }}>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
-                name="date"
+                name="purchaseDate"
                 label="Date"
                 type="date"
-                value={formik.values.date}
+                value={formik.values.purchaseDate}
                 onChange={formik.handleChange}
                 InputLabelProps={{ shrink: true }}
-                error={Boolean(formik.errors.date)}
-                helperText={formik.errors.date}
+                error={Boolean(formik.errors.purchaseDate)}
+                helperText={formik.errors.purchaseDate}
               />
             </Grid>
-
-            <Grid size={{ xs: 4, sm: 4, md: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
-                name="invoice_no"
+                name="invoiceNumber"
                 label="Invoice No"
-                value={formik.values.invoice_no}
+                value={formik.values.invoiceNumber}
                 onChange={formik.handleChange}
-                error={Boolean(formik.errors.invoice_no)}
-                helperText={formik.errors.invoice_no}
+                error={Boolean(formik.errors.invoiceNumber)}
+                helperText={formik.errors.invoiceNumber}
               />
             </Grid>
-
-            <Grid size={{ xs: 4, sm: 4, md: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 select
                 fullWidth
-                name="supplier"
+                name="supplierId"
                 label="Supplier"
-                value={formik.values.supplier}
+                value={formik.values.supplierId}
                 onChange={formik.handleChange}
-                error={Boolean(formik.errors.supplier)}
-                helperText={formik.errors.supplier}
+                error={Boolean(formik.errors.supplierId)}
+                helperText={formik.errors.supplierId}
               >
                 {suppliers.map((s) => (
                   <MenuItem key={s._id} value={s._id}>
@@ -149,86 +237,186 @@ const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
                 ))}
               </TextField>
             </Grid>
-
-            <Grid size={{ xs: 4, sm: 4, md: 6 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 select
                 fullWidth
-                name="tamarindType"
-                label="Tamarind Type"
-                value={formik.values.tamarindType}
+                name="paymentType"
+                label="Payment Type"
+                value={formik.values.paymentType}
                 onChange={formik.handleChange}
-                error={Boolean(formik.errors.tamarindType)}
-                helperText={formik.errors.tamarindType}
+                error={Boolean(formik.errors.paymentType)}
+                helperText={formik.errors.paymentType}
               >
-                {["Whole", "Raw Pod"].map((opt) => (
-                  <MenuItem key={opt} value={opt}>
-                    {opt}
-                  </MenuItem>
-                ))}
+                <MenuItem value="cash">Cash</MenuItem>
+                <MenuItem value="credit">Credit</MenuItem>
               </TextField>
             </Grid>
-
-            <Grid size={{ xs: 4, sm: 4, md: 6 }}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
-                name="quantity"
-                label="Total Quantity (Kg)"
-                type="number"
-                value={formik.values.quantity}
+                name="remarks"
+                label="Remarks"
+                value={formik.values.remarks}
                 onChange={formik.handleChange}
-                error={Boolean(formik.errors.quantity)}
-                helperText={formik.errors.quantity}
+                error={Boolean(formik.errors.remarks)}
+                helperText={formik.errors.remarks}
               />
             </Grid>
-
-            <Grid size={{ xs: 4, sm: 4, md: 6 }}>
-              <TextField
-                fullWidth
-                name="pricePerKg"
-                label="Price per Kg"
-                type="number"
-                value={formik.values.pricePerKg}
-                onChange={formik.handleChange}
-                error={Boolean(formik.errors.pricePerKg)}
-                helperText={formik.errors.pricePerKg}
-              />
-            </Grid>
-
-            <Grid size={{ xs: 4, sm: 8, md: 12 }}>
+          </Grid>
+          <Divider sx={{ my: 2 }} />
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            mb={1}
+          >
+            <Typography fontWeight="bold">Tamarind Items</Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleAddTamarindItem}
+            >
+              Add Item
+            </Button>
+          </Box>
+          {formik.values.tamarindItems.map((item, idx) => (
+            <Box
+              key={idx}
+              mb={3}
+              p={2}
+              border="1px solid #ccc"
+              borderRadius={2}
+            >
               <Box
                 display="flex"
                 justifyContent="space-between"
                 alignItems="center"
-                mt={2}
               >
-                <Box fontWeight="bold">Storage Entries</Box>
+                <Typography fontWeight="bold">Item #{idx + 1}</Typography>
+                {formik.values.tamarindItems.length > 1 && (
+                  <IconButton onClick={() => handleRemoveTamarindItem(idx)}>
+                    <RemoveCircle color="error" />
+                  </IconButton>
+                )}
+              </Box>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Tamarind Type"
+                    name={`tamarindItems[${idx}].type`}
+                    value={item.type}
+                    onChange={formik.handleChange}
+                    error={Boolean(formik.errors.tamarindItems?.[idx]?.type)}
+                    helperText={formik.errors.tamarindItems?.[idx]?.type}
+                  >
+                    {["Whole", "Raw Pod"].map((opt) => (
+                      <MenuItem key={opt} value={opt}>
+                        {opt}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Quantity (Kg)"
+                    name={`tamarindItems[${idx}].quantity`}
+                    value={item.quantity}
+                    onChange={formik.handleChange}
+                    error={Boolean(
+                      formik.errors.tamarindItems?.[idx]?.quantity
+                    )}
+                    helperText={formik.errors.tamarindItems?.[idx]?.quantity}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Rate"
+                    name={`tamarindItems[${idx}].rate`}
+                    value={item.rate}
+                    onChange={formik.handleChange}
+                    error={Boolean(formik.errors.tamarindItems?.[idx]?.rate)}
+                    helperText={formik.errors.tamarindItems?.[idx]?.rate}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Price per Kg"
+                    name={`tamarindItems[${idx}].pricePerKg`}
+                    value={item.pricePerKg}
+                    onChange={formik.handleChange}
+                    error={Boolean(
+                      formik.errors.tamarindItems?.[idx]?.pricePerKg
+                    )}
+                    helperText={formik.errors.tamarindItems?.[idx]?.pricePerKg}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Notes"
+                    name={`tamarindItems[${idx}].notes`}
+                    value={item.notes}
+                    onChange={formik.handleChange}
+                    error={Boolean(formik.errors.tamarindItems?.[idx]?.notes)}
+                    helperText={formik.errors.tamarindItems?.[idx]?.notes}
+                  />
+                </Grid>
+              </Grid>
+              <Divider sx={{ my: 2 }} />
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={1}
+              >
+                <Typography fontWeight="bold">Allocations</Typography>
                 <Button
                   variant="outlined"
                   size="small"
-                  onClick={handleAddEntry}
+                  onClick={() => handleAddAllocation(idx)}
                 >
-                  Add Entry
+                  Add Allocation
                 </Button>
               </Box>
-            </Grid>
-
-            {formik.values.storageEntries.map((entry, index) => (
-              <Grid key={index} size={{ xs: 4, sm: 8, md: 12 }}>
-                <Box mt={2} p={2} border="1px solid #ccc" borderRadius={2}>
-                  <Grid
-                    container
-                    spacing={{ xs: 2, md: 3 }}
-                    columns={{ xs: 4, sm: 8, md: 12 }}
-                  >
-                    <Grid size={{ xs: 4, sm: 4, md: 6 }}>
+              {item.allocation.map((alloc, aIdx) => {
+                const fac = facilities.find((f) => f._id === alloc.storageId);
+                const isCold = fac && fac.type === "cold_storage";
+                console.log(fac);
+                // Always set lotsFacilityId to the current cold storage for this allocation
+                if (
+                  isCold &&
+                  alloc.storageId &&
+                  lotsFacilityId !== alloc.storageId
+                ) {
+                  setLotsFacilityId(alloc.storageId);
+                }
+                return (
+                  <Grid container spacing={2} key={aIdx} alignItems="center">
+                    <Grid size={{ xs: 12, sm: 3 }}>
                       <TextField
                         select
                         fullWidth
                         label="Facility"
-                        name={`storageEntries[${index}].facility_id`}
-                        value={entry.facility_id}
-                        onChange={formik.handleChange}
+                        name={`tamarindItems[${idx}].allocation[${aIdx}].storageId`}
+                        value={alloc.storageId}
+                        onChange={(e) => {
+                          formik.handleChange(e);
+                          const facilityId = e.target.value;
+                          const fac = facilities.find(
+                            (f) => f._id === facilityId
+                          );
+                          if (fac && fac.type === "cold")
+                            handleLotDropdownOpen(facilityId);
+                        }}
                       >
                         {facilities.map((f) => (
                           <MenuItem key={f._id} value={f._id}>
@@ -237,56 +425,83 @@ const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
                         ))}
                       </TextField>
                     </Grid>
-
-                    <Grid size={{ xs: 4, sm: 4, md: 6 }}>
+                    <Grid size={{ xs: 12, sm: 3 }}>
                       <TextField
                         fullWidth
                         type="number"
                         label="Weight (kg)"
-                        name={`storageEntries[${index}].weight`}
-                        value={entry.weight}
+                        name={`tamarindItems[${idx}].allocation[${aIdx}].quantity`}
+                        value={alloc.quantity}
                         onChange={formik.handleChange}
                       />
                     </Grid>
-
-                    <Grid size={{ xs: 4, sm: 4, md: 6 }}>
+                    <Grid size={{ xs: 12, sm: 3 }}>
                       <TextField
                         select
                         fullWidth
                         label="Material Type"
-                        name={`storageEntries[${index}].materialType`}
-                        value={entry.materialType}
+                        name={`tamarindItems[${idx}].allocation[${aIdx}].materialType`}
+                        value={alloc.materialType}
                         onChange={formik.handleChange}
                       >
                         <MenuItem value="puli_type_1">Puli Type 1</MenuItem>
                         <MenuItem value="puli_type_2">Puli Type 2</MenuItem>
                       </TextField>
                     </Grid>
-
-                    <Grid size={{ xs: 4, sm: 4, md: 6 }}>
-                      <TextField
-                        fullWidth
-                        label="Lot Number (cold only)"
-                        name={`storageEntries[${index}].lot_number`}
-                        value={entry.lot_number}
-                        onChange={formik.handleChange}
-                      />
-                    </Grid>
-
-                    <Grid size={{ xs: 4, sm: 8, md: 12 }}>
-                      <Box display="flex" justifyContent="flex-end">
-                        <IconButton onClick={() => handleRemoveEntry(index)}>
+                    {/* Only show Lot dropdown if a cold storage is selected */}
+                    {isCold && alloc.storageId ? (
+                      <Grid size={{ xs: 12, sm: 2 }}>
+                        <TextField
+                          select
+                          fullWidth
+                          label="Lot Number"
+                          name={`tamarindItems[${idx}].allocation[${aIdx}].lot_number`}
+                          value={alloc.lot_number}
+                          onChange={(e) => {
+                            if (e.target.value === "__create_new__") {
+                              setLotFacilityId(alloc.storageId);
+                              setLotDialogOpen(true);
+                            } else {
+                              formik.handleChange(e);
+                            }
+                          }}
+                          SelectProps={{
+                            renderValue: (selected) => {
+                              if (!selected) return "";
+                              const lot = lots.find(
+                                (l) => l.lotNumber === selected
+                              );
+                              return lot ? lot.lotNumber : selected;
+                            },
+                          }}
+                        >
+                          {console.log(lots)}
+                          {lots.map((lot) => (
+                            <MenuItem key={lot._id} value={lot.lotNumber}>
+                              {lot.lotNumber}
+                            </MenuItem>
+                          ))}
+                          <MenuItem value="__create_new__">
+                            + Create New Lot
+                          </MenuItem>
+                        </TextField>
+                      </Grid>
+                    ) : null}
+                    <Grid size={{ xs: 12, sm: 1 }}>
+                      {item.allocation.length > 1 && (
+                        <IconButton
+                          onClick={() => handleRemoveAllocation(idx, aIdx)}
+                        >
                           <RemoveCircle color="error" />
                         </IconButton>
-                      </Box>
+                      )}
                     </Grid>
                   </Grid>
-                </Box>
-              </Grid>
-            ))}
-          </Grid>
+                );
+              })}
+            </Box>
+          ))}
         </DialogContent>
-
         <DialogActions>
           <Button variant="outlined" onClick={onClose}>
             Cancel
@@ -296,6 +511,62 @@ const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
           </Button>
         </DialogActions>
       </form>
+      {/* Lot Creation Dialog */}
+      <MuiDialog
+        open={lotDialogOpen}
+        onClose={() => setLotDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Create New Lot</DialogTitle>
+        <DialogContent dividers>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Lot Number"
+                value={newLot.lotNumber}
+                onChange={(e) =>
+                  setNewLot({ ...newLot, lotNumber: e.target.value })
+                }
+                helperText="Enter the lot number"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Tamarind Type"
+                value={newLot.tamarindType}
+                onChange={(e) =>
+                  setNewLot({ ...newLot, tamarindType: e.target.value })
+                }
+                helperText="Type of tamarind in this lot"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Quantity (kg)"
+                type="number"
+                value={newLot.quantity}
+                onChange={(e) =>
+                  setNewLot({ ...newLot, quantity: e.target.value })
+                }
+                helperText="Enter quantity in kilograms"
+                inputProps={{ min: 0 }}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setLotDialogOpen(false)} color="secondary">
+            Cancel
+          </Button>
+          <Button onClick={handleCreateLot} variant="contained" color="primary">
+            Create Lot
+          </Button>
+        </DialogActions>
+      </MuiDialog>
     </Dialog>
   );
 };
