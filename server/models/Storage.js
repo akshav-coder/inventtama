@@ -25,6 +25,10 @@ const storageSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    quantity: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

@@ -143,6 +143,7 @@ const StorageAndLotPage = () => {
                     <TableCell>Name</TableCell>
                     <TableCell>Type</TableCell>
                     <TableCell align="center">Lots</TableCell>
+                    <TableCell align="center">Quantity</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -166,6 +167,9 @@ const StorageAndLotPage = () => {
                             N/A
                           </Typography>
                         )}
+                      </TableCell>
+                      <TableCell align="center">
+                        {storage.type === "unit" ? storage.quantity || 0 : "-"}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -222,6 +226,24 @@ const StorageAndLotPage = () => {
                 <MenuItem value="unit">Unit</MenuItem>
               </TextField>
             </Grid>
+            {newStorage.type === "unit" && (
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Quantity (kg)"
+                  type="number"
+                  value={newStorage.quantity || 0}
+                  onChange={(e) =>
+                    setNewStorage({
+                      ...newStorage,
+                      quantity: Number(e.target.value),
+                    })
+                  }
+                  helperText="Enter quantity for this unit storage"
+                  inputProps={{ min: 0 }}
+                />
+              </Grid>
+            )}
           </Grid>
         </DialogContent>
         <DialogActions>

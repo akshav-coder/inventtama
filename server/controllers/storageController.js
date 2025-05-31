@@ -14,6 +14,10 @@ exports.getStorages = async (req, res) => {
 exports.createStorage = async (req, res) => {
   try {
     const newStorage = new Storage(req.body);
+    // If type is unit and quantity is not provided, set to 0
+    if (newStorage.type === "unit" && typeof newStorage.quantity !== "number") {
+      newStorage.quantity = 0;
+    }
     const saved = await newStorage.save();
     res.status(201).json(saved);
   } catch (error) {
