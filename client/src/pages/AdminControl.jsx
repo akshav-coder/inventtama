@@ -2,13 +2,13 @@ import React, { useState } from "react";
 import { TextField, Button, Typography, Box, Stack, Grid } from "@mui/material";
 import { useSnackbar } from "../components/common/SnackbarProvider";
 import { useAddSupplierMutation } from "../services/suppliersApi";
-import { useAddStorageOptionMutation } from "../services/storageApi";
+// import { useAddStorageOptionMutation } from "../services/storageApi";
 
 const AdminControl = () => {
   const [supplierName, setSupplierName] = useState("");
   const [storageOption, setStorageOption] = useState("");
   const [addSupplier] = useAddSupplierMutation();
-  const [addStorageOption] = useAddStorageOptionMutation();
+  // const [addStorageOption] = useAddStorageOptionMutation();
   const showSnackbar = useSnackbar();
 
   const handleAddSupplier = async () => {
@@ -31,7 +31,7 @@ const AdminControl = () => {
       return;
     }
     try {
-      await addStorageOption({ option: storageOption }).unwrap();
+      // await addStorageOption({ option: storageOption }).unwrap();
       showSnackbar("Storage option added successfully!", "success");
       setStorageOption("");
     } catch (error) {

@@ -1,18 +1,24 @@
 const Storage = require("../models/Storage");
-const StorageOption = require("../models/StorageOption");
 
-exports.addStorageOption = async (req, res) => {
-  const { option } = req.body;
-
-  if (!option) {
-    return res.status(400).json({ message: "Storage option is required." });
-  }
-
+exports.getStorages = async (req, res) => {
   try {
-    const newOption = new StorageOption({ option });
-    await newOption.save();
-    res.status(201).json(newOption);
+    const { type } = req.query;
+    const filters = type ? { type } : {};
+    const storages = await Storage.find(filters);
+    res.status(200).json(storages);
   } catch (error) {
-    res.status(500).json({ message: "Error adding storage option." });
+    res.status(500).json({ error: "Failed to fetch storages" });
+  }
+};
+
+exports.createStorage = async (req, res) => {
+  try {
+    const newStorage = new Storage(req.body);
+    const saved = await newStorage.save();
+    res.status(201).json(saved);
+  } catch (error) {
+    res
+      .status(400)
+      .json({ error: "Failed to create storage", details: error.message });
   }
 };

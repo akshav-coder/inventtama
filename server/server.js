@@ -13,6 +13,7 @@ const seedSaleRoutes = require("./routes/seedSaleRoutes");
 const authRoutes = require("./routes/authRoutes");
 const supplierRoutes = require("./routes/supplierRoutes");
 const customerRoutes = require("./routes/CustomerRoutes");
+const lotRoutes = require("./routes/lotRoutes");
 
 dotenv.config();
 connectDB();
@@ -23,7 +24,6 @@ app.use(express.json());
 
 // Routes
 app.use("/api/purchases", purchaseRoutes);
-app.use("/api/storage-options", storageRoutes);
 app.use("/api/processing", processingRoutes);
 app.use("/api/unit-transfers", unitTransferRoutes);
 app.use("/api/sales", saleRoutes);
@@ -33,9 +33,10 @@ app.use("/api/seed-sales", seedSaleRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/suppliers", supplierRoutes);
 app.use("/api/customers", customerRoutes);
+app.use("/api", storageRoutes);
 app.use("/api/purchases", require("./routes/purchaseRoutes"));
 app.use("/api/facilities", require("./routes/facilityRoutes")); // ✅ Add this
-app.use("/api/lots", require("./routes/lotRoutes"));
+app.use("/api", lotRoutes);
 
 app.get("/", (req, res) => {
   res.send("Tamarind Tracker API is running...");

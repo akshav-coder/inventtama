@@ -2,14 +2,19 @@ import { apiSlice } from "./apiSlice";
 
 export const storageApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    addStorageOption: builder.mutation({
-      query: (option) => ({
-        url: "/storage-options",
+    getStorages: builder.query({
+      query: (type) => `/storages?type=${type}`,
+      providesTags: ["Storage"],
+    }),
+    createStorage: builder.mutation({
+      query: (newStorage) => ({
+        url: "/storages",
         method: "POST",
-        body: option,
+        body: newStorage,
       }),
+      invalidatesTags: ["Storage"],
     }),
   }),
 });
 
-export const { useAddStorageOptionMutation } = storageApi;
+export const { useGetStoragesQuery, useCreateStorageMutation } = storageApi;

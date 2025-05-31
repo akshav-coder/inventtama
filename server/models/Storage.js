@@ -2,39 +2,28 @@ const mongoose = require("mongoose");
 
 const storageSchema = new mongoose.Schema(
   {
-    date: {
-      type: Date,
+    name: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    type: {
+      type: String,
+      enum: ["cold", "unit"],
       required: true,
     },
-    tamarindType: {
+    location: {
       type: String,
-      enum: ["Whole", "Raw Pod"],
-      required: true,
     },
-    quantityIn: {
-      type: Number,
-      default: 0,
-    },
-    quantityOut: {
-      type: Number,
-      default: 0,
-    },
-    reasonForMovement: {
+    contactPerson: {
       type: String,
-      enum: ["To Unit 1", "To Unit 2", "Store"],
-      required: true,
     },
-    storageLocation: {
+    phone: {
       type: String,
-      default: "Cold Storage 1",
     },
-    remainingStock: {
-      type: Number,
-      required: true,
-    },
-    notes: {
-      type: String,
-      default: "",
+    isActive: {
+      type: Boolean,
+      default: true,
     },
   },
   {
@@ -42,4 +31,5 @@ const storageSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Storage", storageSchema);
+const Storage = mongoose.model("Storage", storageSchema);
+module.exports = Storage;

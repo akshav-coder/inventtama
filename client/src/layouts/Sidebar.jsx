@@ -46,6 +46,11 @@ const menuItems = [
     icon: <Diversity3Outlined />,
     path: "/customer-management",
   },
+  {
+    text: "Storage Management",
+    icon: <Warehouse />,
+    path: "/storage-management",
+  },
 ];
 
 const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {

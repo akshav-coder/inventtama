@@ -13,6 +13,7 @@ import Dashboard from "../pages/Dashboard";
 import AdminControl from "../pages/AdminControl";
 import SupplierPage from "../pages/SupplierPage";
 import CustomerPage from "../pages/CustomerPage";
+import StorageAndLotPage from "../pages/StorageAndLotPage";
 
 const AppRoutes = () => {
   return (
@@ -34,6 +35,7 @@ const AppRoutes = () => {
           <Route path="/admin-control" element={<AdminControl />} />
           <Route path="/supplier-management" element={<SupplierPage />} />
           <Route path="/customer-management" element={<CustomerPage />} />
+          <Route path="/storage-management" element={<StorageAndLotPage />} />
         </Route>
       </Route>
     </Routes>
