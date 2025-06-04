@@ -22,6 +22,7 @@ import { useSnackbar } from "../common/SnackbarProvider";
 import { useState, useEffect } from "react";
 import { useGetLotsQuery, useCreateLotMutation } from "../../services/lotapi";
 import { Dialog as MuiDialog } from "@mui/material";
+import { useGetStoragesQuery } from "../../services/storageApi";
 
 const allocationSchema = Yup.object({
   storageId: Yup.string().required("Facility is required"),
@@ -65,7 +66,7 @@ const defaultTamarindItem = {
 
 const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
   const { data: suppliers = [] } = useGetSuppliersQuery();
-  const { data: facilities = [] } = useGetFacilitiesQuery();
+  const { data: facilities = [] } = useGetStoragesQuery("");
   const showSnackbar = useSnackbar();
   const [selectedFacilityType, setSelectedFacilityType] = useState({});
   const [lotDialogOpen, setLotDialogOpen] = useState(false);
@@ -389,18 +390,16 @@ const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
               </Box>
               {item.allocation.map((alloc, aIdx) => {
                 const fac = facilities.find((f) => f._id === alloc.storageId);
-                const isCold = fac && fac.type === "cold_storage";
-                console.log(fac);
-                // Always set lotsFacilityId to the current cold storage for this allocation
-                if (
-                  isCold &&
-                  alloc.storageId &&
-                  lotsFacilityId !== alloc.storageId
-                ) {
-                  setLotsFacilityId(alloc.storageId);
-                }
+                const isCold = fac && fac.type === "cold";
+
                 return (
-                  <Grid container spacing={2} key={aIdx} alignItems="center">
+                  <Grid
+                    container
+                    spacing={2}
+                    key={aIdx}
+                    alignItems="center"
+                    mb={2}
+                  >
                     <Grid size={{ xs: 12, sm: 3 }}>
                       <TextField
                         select
@@ -414,8 +413,9 @@ const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
                           const fac = facilities.find(
                             (f) => f._id === facilityId
                           );
-                          if (fac && fac.type === "cold")
+                          if (fac && fac.type === "cold") {
                             handleLotDropdownOpen(facilityId);
+                          }
                         }}
                       >
                         {facilities.map((f) => (
