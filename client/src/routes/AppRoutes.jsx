@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import Purchases from "../pages/Purchases";
 import Processing from "../pages/Processing";
@@ -13,29 +13,65 @@ import SupplierPage from "../pages/SupplierPage";
 import CustomerPage from "../pages/CustomerPage";
 import StorageAndLotPage from "../pages/StorageAndLotPage";
 
-const AppRoutes = () => {
-  return (
-    <Routes>
-      {/* Public */}
-      <Route path="/login" element={<Login />} />
+const router = createBrowserRouter([
+  {
+    path: "/login",
+    element: <Login />,
+  },
+  {
+    element: <PrivateRoute />,
+    children: [
+      {
+        element: <MainLayout />,
+        children: [
+          {
+            path: "/",
+            element: <Dashboard />,
+          },
+          {
+            path: "/purchases",
+            element: <Purchases />,
+          },
+          {
+            path: "/processing",
+            element: <Processing />,
+          },
+          {
+            path: "/transfers",
+            element: <Transfers />,
+          },
+          {
+            path: "/sales",
+            element: <Sales />,
+          },
+          {
+            path: "/wholesale-credit",
+            element: <WholesaleCredit />,
+          },
+          {
+            path: "/supplier-credit",
+            element: <SupplierCredit />,
+          },
+          {
+            path: "/supplier-management",
+            element: <SupplierPage />,
+          },
+          {
+            path: "/customer-management",
+            element: <CustomerPage />,
+          },
+          {
+            path: "/storage-management",
+            element: <StorageAndLotPage />,
+          },
+        ],
+      },
+    ],
+  },
+]);
 
-      {/* Private */}
-      <Route element={<PrivateRoute />}>
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/purchases" element={<Purchases />} />
-          <Route path="/processing" element={<Processing />} />
-          <Route path="/transfers" element={<Transfers />} />
-          <Route path="/sales" element={<Sales />} />
-          <Route path="/wholesale-credit" element={<WholesaleCredit />} />
-          <Route path="/supplier-credit" element={<SupplierCredit />} />
-          <Route path="/supplier-management" element={<SupplierPage />} />
-          <Route path="/customer-management" element={<CustomerPage />} />
-          <Route path="/storage-management" element={<StorageAndLotPage />} />
-        </Route>
-      </Route>
-    </Routes>
-  );
+const AppRoutes = () => {
+  return <RouterProvider router={router} />;
 };
 
 export default AppRoutes;
