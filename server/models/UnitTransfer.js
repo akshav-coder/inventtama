@@ -2,31 +2,49 @@ const mongoose = require("mongoose");
 
 const unitTransferSchema = new mongoose.Schema(
   {
-    date: {
-      type: Date,
-      required: true,
-    },
     fromUnit: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Unit",
       required: true,
     },
     toUnit: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Unit",
       required: true,
     },
-    item: {
+    items: [
+      {
+        item: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Item",
+          required: true,
+        },
+        quantity: {
+          type: Number,
+          required: true,
+          min: 1,
+        },
+      },
+    ],
+    status: {
       type: String,
-      enum: ["Raw Tamarind", "Paste", "Semi-processed"],
+      enum: ["pending", "approved", "rejected", "completed"],
+      default: "pending",
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
     },
-    quantity: {
-      type: Number,
-      required: true,
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
     },
-    notes: {
-      type: String,
-      default: "",
+    date: {
+      type: Date,
+      default: Date.now,
     },
+    notes: String,
   },
   {
     timestamps: true,

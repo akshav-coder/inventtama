@@ -3,8 +3,14 @@ import { apiSlice } from "./apiSlice";
 export const unitTransferApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getTransfers: builder.query({
-      query: () => "/unit-transfers",
+      query: (params) => ({
+        url: `/unit-transfers${params ? `?${params}` : ""}`,
+      }),
       providesTags: ["Transfer"],
+    }),
+    getTransferById: builder.query({
+      query: (id) => `/unit-transfers/${id}`,
+      providesTags: (result, error, id) => [{ type: "Transfer", id }],
     }),
     createTransfer: builder.mutation({
       query: (data) => ({
@@ -20,7 +26,10 @@ export const unitTransferApi = apiSlice.injectEndpoints({
         method: "PUT",
         body: data,
       }),
-      invalidatesTags: ["Transfer"],
+      invalidatesTags: (result, error, { id }) => [
+        "Transfer",
+        { type: "Transfer", id },
+      ],
     }),
     deleteTransfer: builder.mutation({
       query: (id) => ({
@@ -34,6 +43,7 @@ export const unitTransferApi = apiSlice.injectEndpoints({
 
 export const {
   useGetTransfersQuery,
+  useGetTransferByIdQuery,
   useCreateTransferMutation,
   useUpdateTransferMutation,
   useDeleteTransferMutation,
