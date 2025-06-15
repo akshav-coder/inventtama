@@ -66,20 +66,16 @@ const Transfers = () => {
 
   const handleSubmit = async (formData) => {
     try {
-      console.log("Submitting form data:", formData);
       if (editItem) {
         const result = await update({ id: editItem._id, ...formData }).unwrap();
-        console.log("Update result:", result);
         showSnackbar("Transfer updated successfully", "success");
       } else {
         const result = await create(formData).unwrap();
-        console.log("Create result:", result);
         showSnackbar("Transfer created successfully", "success");
       }
       setEditItem(null);
     } catch (error) {
-      console.error("Error submitting form:", error);
-      showSnackbar(error.data?.error || "Operation failed", "error");
+      showSnackbar("Error saving transfer", "error");
     }
   };
 

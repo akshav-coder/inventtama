@@ -10,7 +10,7 @@ exports.getAllPurchases = async (req, res) => {
       .populate("tamarindItems.allocation.lotId");
     res.status(200).json(purchases);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch purchases" });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -23,7 +23,7 @@ exports.getPurchaseById = async (req, res) => {
     if (!purchase) return res.status(404).json({ error: "Purchase not found" });
     res.status(200).json(purchase);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch purchase" });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -68,7 +68,6 @@ exports.createPurchase = async (req, res) => {
     await purchase.save();
     res.status(201).json(purchase);
   } catch (error) {
-    console.error(error);
     res.status(400).json({
       error: "Failed to create purchase",
       details: error.message,
@@ -130,7 +129,6 @@ exports.updatePurchase = async (req, res) => {
     await existingPurchase.save();
     res.status(200).json(existingPurchase);
   } catch (error) {
-    console.error(error);
     res.status(400).json({
       error: "Failed to update purchase",
       details: error.message,
@@ -144,6 +142,6 @@ exports.deletePurchase = async (req, res) => {
     if (!purchase) return res.status(404).json({ error: "Purchase not found" });
     res.status(200).json({ message: "Purchase deleted successfully" });
   } catch (error) {
-    res.status(500).json({ error: "Failed to delete purchase" });
+    res.status(500).json({ message: error.message });
   }
 };

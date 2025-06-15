@@ -18,9 +18,9 @@ const seed = async () => {
     await mongoose.connect(MONGO_URI);
     await Facility.deleteMany(); // optional: wipe previous entries
     await Facility.insertMany(facilities);
-    console.log("✅ Facilities seeded!");
+    // Facilities seeded successfully
   } catch (err) {
-    console.error("❌ Error seeding facilities:", err);
+    throw new Error(`Failed to seed facilities: ${err.message}`);
   } finally {
     mongoose.connection.close();
   }
