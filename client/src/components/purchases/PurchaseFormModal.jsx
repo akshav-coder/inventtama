@@ -13,11 +13,10 @@ import {
   Typography,
   Divider,
 } from "@mui/material";
-import { AddCircle, RemoveCircle } from "@mui/icons-material";
+import { RemoveCircle } from "@mui/icons-material";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { useGetSuppliersQuery } from "../../services/suppliersApi";
-import { useGetFacilitiesQuery } from "../../services/facilityApi";
 import { useSnackbar } from "../common/SnackbarProvider";
 import { useState, useEffect } from "react";
 import { useGetLotsQuery, useCreateLotMutation } from "../../services/lotapi";
@@ -83,15 +82,24 @@ const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
     skip: !lotsFacilityId,
   });
 
+  const defaultFormValues = {
+    purchaseDate: "",
+    invoiceNumber: "",
+    supplierId: "",
+    paymentType: "credit",
+    remarks: "",
+    tamarindItems: [JSON.parse(JSON.stringify(defaultTamarindItem))],
+  };
+
+  // Reset form when modal is opened for a new purchase
+  useEffect(() => {
+    if (open && !initialValues) {
+      formik.resetForm({ values: defaultFormValues });
+    }
+  }, [open, initialValues]);
+
   const formik = useFormik({
-    initialValues: initialValues || {
-      purchaseDate: "",
-      invoiceNumber: "",
-      supplierId: "",
-      paymentType: "credit",
-      remarks: "",
-      tamarindItems: [JSON.parse(JSON.stringify(defaultTamarindItem))],
-    },
+    initialValues: initialValues || defaultFormValues,
     validationSchema,
     enableReinitialize: true,
     validateOnBlur: false,
@@ -139,6 +147,16 @@ const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
     });
     setSelectedFacilityType(typeMap);
   }, [formik.values.tamarindItems, facilities]);
+
+  // Add effect to calculate rate when price per kg changes
+  useEffect(() => {
+    formik.values.tamarindItems.forEach((item, idx) => {
+      if (item.pricePerKg) {
+        const rate = parseFloat(item.pricePerKg) * 1000; // Convert to rate per ton
+        formik.setFieldValue(`tamarindItems[${idx}].rate`, rate.toFixed(2));
+      }
+    });
+  }, [formik.values.tamarindItems.map((item) => item.pricePerKg).join(",")]);
 
   const handleAddTamarindItem = () => {
     formik.setFieldValue("tamarindItems", [
