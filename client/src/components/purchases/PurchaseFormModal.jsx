@@ -58,7 +58,12 @@ const defaultTamarindItem = {
   rate: "",
   pricePerKg: "",
   allocation: [
-    { storageId: "", quantity: "", materialType: "", lot_number: "" },
+    {
+      storageId: "",
+      quantity: "",
+      materialType: "puli_type_1",
+      lot_number: "",
+    },
   ],
   notes: "",
 };
@@ -91,15 +96,34 @@ const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
     tamarindItems: [JSON.parse(JSON.stringify(defaultTamarindItem))],
   };
 
+  // Transform initial values to match form structure
+  const transformInitialValues = (values) => {
+    if (!values) return defaultFormValues;
+
+    return {
+      ...values,
+      supplierId: values.supplierId?._id || values.supplierId,
+      tamarindItems: values.tamarindItems.map((item) => ({
+        ...item,
+        allocation: item.allocation.map((alloc) => ({
+          ...alloc,
+          storageId: alloc.storageId?._id || alloc.storageId,
+          lot_number: alloc.lotId?.lotNumber || "",
+          materialType: alloc.materialType || "puli_type_1", // Default material type if not set
+        })),
+      })),
+    };
+  };
+
   // Reset form when modal is opened for a new purchase
   useEffect(() => {
-    if (open && !initialValues) {
-      formik.resetForm({ values: defaultFormValues });
+    if (open) {
+      formik.resetForm({ values: transformInitialValues(initialValues) });
     }
   }, [open, initialValues]);
 
   const formik = useFormik({
-    initialValues: initialValues || defaultFormValues,
+    initialValues: transformInitialValues(initialValues) || defaultFormValues,
     validationSchema,
     enableReinitialize: true,
     validateOnBlur: false,
@@ -195,18 +219,49 @@ const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
 
   const handleCreateLot = async () => {
     if (!newLot.lotNumber || !newLot.tamarindType || !newLot.quantity) return;
-    const res = await createLot({ ...newLot, coldStorageId: lotFacilityId });
-    setLotDialogOpen(false);
-    setNewLot({
-      lotNumber: "",
-      tamarindType: "",
-      quantity: "",
-      coldStorageId: "",
-    });
-    setLotsFacilityId(lotFacilityId); // refetch lots
-    // Optionally, set the new lot in the allocation field
-    // You may want to update the allocation field here if needed
+    try {
+      const res = await createLot({ ...newLot, coldStorageId: lotFacilityId });
+      if (res.data) {
+        // Find the allocation that triggered this lot creation
+        const itemIdx = formik.values.tamarindItems.findIndex((item) =>
+          item.allocation.some((alloc) => alloc.storageId === lotFacilityId)
+        );
+        if (itemIdx !== -1) {
+          const allocIdx = formik.values.tamarindItems[
+            itemIdx
+          ].allocation.findIndex((alloc) => alloc.storageId === lotFacilityId);
+          if (allocIdx !== -1) {
+            formik.setFieldValue(
+              `tamarindItems[${itemIdx}].allocation[${allocIdx}].lot_number`,
+              res.data.lotNumber
+            );
+          }
+        }
+      }
+      setLotDialogOpen(false);
+      setNewLot({
+        lotNumber: "",
+        tamarindType: "",
+        quantity: "",
+        coldStorageId: "",
+      });
+      setLotsFacilityId(lotFacilityId); // refetch lots
+    } catch (error) {
+      showSnackbar("Failed to create lot", "error");
+    }
   };
+
+  // Add effect to load lots when cold storage is selected
+  useEffect(() => {
+    formik.values.tamarindItems.forEach((item, idx) => {
+      item.allocation.forEach((alloc, aIdx) => {
+        const fac = facilities.find((f) => f._id === alloc.storageId);
+        if (fac && fac.type === "cold") {
+          handleLotDropdownOpen(alloc.storageId);
+        }
+      });
+    });
+  }, [formik.values.tamarindItems, facilities]);
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
@@ -493,7 +548,6 @@ const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
                             },
                           }}
                         >
-                          {console.log(lots)}
                           {lots.map((lot) => (
                             <MenuItem key={lot._id} value={lot.lotNumber}>
                               {lot.lotNumber}

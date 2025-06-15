@@ -38,7 +38,6 @@ const Purchases = () => {
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, id: null });
 
   const handleSubmit = async (formData) => {
-    console.log(formData);
     if (editItem) {
       await updatePurchase({ id: editItem._id, ...formData });
     } else {
