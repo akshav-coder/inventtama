@@ -5,44 +5,67 @@ const processingSchema = new mongoose.Schema(
     date: {
       type: Date,
       required: true,
+      default: Date.now,
     },
-    unitName: {
+    manufacturingUnit: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Storage",
+      required: true,
+    },
+    inputs: [
+      {
+        tamarindType: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "TamarindType",
+          required: true,
+        },
+        quantity: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+      },
+    ],
+    totalInputQuantity: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    output: {
+      pasteType: {
+        type: String,
+        required: true,
+      },
+      quantity: {
+        type: Number,
+        required: true,
+        min: 0,
+      },
+    },
+    weightLoss: {
+      quantity: {
+        type: Number,
+        required: true,
+        min: 0,
+      },
+      percentage: {
+        type: Number,
+        required: true,
+        min: 0,
+      },
+    },
+    team: {
       type: String,
-      enum: ["Unit 1", "Unit 2"],
-      required: true,
-    },
-    tamarindTypeUsed: {
-      type: String,
-      enum: ["Whole", "Raw Pod"],
-      required: true,
-    },
-    quantityUsed: {
-      type: Number,
-      required: true,
-    },
-    saltQty: {
-      type: Number,
-      default: 0,
-    },
-    oilQty: {
-      type: Number,
-      default: 0,
-    },
-    pasteProduced: {
-      type: Number,
-      required: true,
-    },
-    seedsCollected: {
-      type: Number,
-      default: 0,
-    },
-    operatorName: {
-      type: String,
-      required: true,
+      required: false,
     },
     notes: {
       type: String,
-      default: "",
+      required: false,
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
   },
   {
@@ -50,4 +73,23 @@ const processingSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Processing", processingSchema);
+// Pre-save middleware to calculate total input quantity
+processingSchema.pre("save", function (next) {
+  this.totalInputQuantity = this.inputs.reduce(
+    (sum, input) => sum + input.quantity,
+    0
+  );
+  next();
+});
+
+// Pre-save middleware to calculate weight loss
+processingSchema.pre("save", function (next) {
+  this.weightLoss.quantity = this.totalInputQuantity - this.output.quantity;
+  this.weightLoss.percentage =
+    (this.weightLoss.quantity / this.totalInputQuantity) * 100;
+  next();
+});
+
+const Processing = mongoose.model("Processing", processingSchema);
+
+module.exports = Processing;
