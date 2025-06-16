@@ -1,10 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const processingController = require("../controllers/processingController");
-const auth = require("../middleware/auth");
-
-// All routes are protected with authentication
-router.use(auth);
 
 // Create a new processing record
 router.post("/", processingController.createProcessing);

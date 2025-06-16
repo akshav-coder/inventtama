@@ -3,7 +3,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const connectDB = require("./config/db");
 const storageRoutes = require("./routes/storageRoutes");
-const processingRoutes = require("./routes/processingRoutes");
+const processingRoutes = require("./routes/processing");
 const unitTransferRoutes = require("./routes/unitTransferRoutes");
 const saleRoutes = require("./routes/saleRoutes");
 const authRoutes = require("./routes/authRoutes");
@@ -26,7 +26,6 @@ app.use("/api/suppliers", supplierRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api", storageRoutes);
 app.use("/api/purchases", require("./routes/purchaseRoutes"));
-app.use("/api/facilities", require("./routes/facilityRoutes")); // ✅ Add this
 app.use("/api", lotRoutes);
 
 app.get("/", (req, res) => {
