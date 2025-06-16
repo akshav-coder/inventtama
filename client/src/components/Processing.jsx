@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import {
   Box,
   Button,
@@ -32,9 +31,15 @@ import {
   Edit as EditIcon,
   Add as AddIcon,
 } from "@mui/icons-material";
+import {
+  useGetProcessingLogsQuery,
+  useCreateProcessingLogMutation,
+  useUpdateProcessingLogMutation,
+  useDeleteProcessingLogMutation,
+} from "../services/processingApi";
+import { useGetStoragesQuery } from "../services/storageApi";
 
 const Processing = () => {
-  const [processingRecords, setProcessingRecords] = useState([]);
   const [manufacturingUnits, setManufacturingUnits] = useState([]);
   const [tamarindTypes, setTamarindTypes] = useState([]);
   const [formData, setFormData] = useState({
@@ -56,40 +61,18 @@ const Processing = () => {
     severity: "success",
   });
 
+  const { data: processingRecords = [], isLoading: isLoadingProcessing } =
+    useGetProcessingLogsQuery();
+  const { data: storageData = [] } = useGetStoragesQuery("manufacturing");
+  const [createProcessingLog] = useCreateProcessingLogMutation();
+  const [updateProcessingLog] = useUpdateProcessingLogMutation();
+  const [deleteProcessingLog] = useDeleteProcessingLogMutation();
+
   useEffect(() => {
-    fetchProcessingRecords();
-    fetchManufacturingUnits();
-    fetchTamarindTypes();
-  }, []);
-
-  const fetchProcessingRecords = async () => {
-    try {
-      const response = await axios.get("/api/processing");
-      setProcessingRecords(response.data);
-    } catch (error) {
-      showSnackbar("Error fetching processing records", "error");
+    if (storageData) {
+      setManufacturingUnits(storageData);
     }
-  };
-
-  const fetchManufacturingUnits = async () => {
-    try {
-      const response = await axios.get("/api/storage");
-      setManufacturingUnits(
-        response.data.filter((unit) => unit.type === "manufacturing")
-      );
-    } catch (error) {
-      showSnackbar("Error fetching manufacturing units", "error");
-    }
-  };
-
-  const fetchTamarindTypes = async () => {
-    try {
-      const response = await axios.get("/api/tamarind-types");
-      setTamarindTypes(response.data);
-    } catch (error) {
-      showSnackbar("Error fetching tamarind types", "error");
-    }
-  };
+  }, [storageData]);
 
   const showSnackbar = (message, severity = "success") => {
     setSnackbar({ open: true, message, severity });
@@ -130,13 +113,12 @@ const Processing = () => {
     e.preventDefault();
     try {
       if (editingId) {
-        await axios.put(`/api/processing/${editingId}`, formData);
+        await updateProcessingLog({ id: editingId, ...formData }).unwrap();
         showSnackbar("Processing record updated");
       } else {
-        await axios.post("/api/processing", formData);
+        await createProcessingLog(formData).unwrap();
         showSnackbar("Processing record created");
       }
-      fetchProcessingRecords();
       resetForm();
       handleClose();
     } catch (error) {
@@ -166,8 +148,7 @@ const Processing = () => {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this record?")) {
       try {
-        await axios.delete(`/api/processing/${id}`);
-        fetchProcessingRecords();
+        await deleteProcessingLog(id).unwrap();
         showSnackbar("Processing record deleted");
       } catch (error) {
         showSnackbar("Error deleting processing record", "error");
@@ -395,7 +376,9 @@ const Processing = () => {
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleClose}>Cancel</Button>
+            <Button onClick={handleClose} variant="outlined">
+              Cancel
+            </Button>
             <Button onClick={handleSubmit} variant="contained">
               {editingId ? "Update" : "Create"}
             </Button>
