@@ -4,8 +4,6 @@ import Purchases from "../pages/Purchases";
 import Processing from "../pages/Processing";
 import Transfers from "../pages/Transfers";
 import Sales from "../pages/Sales";
-import WholesaleCredit from "../pages/WholesaleCredit";
-import SupplierCredit from "../pages/SupplierCredit";
 import Login from "../pages/Login";
 import PrivateRoute from "./PrivateRoute";
 import Dashboard from "../pages/Dashboard";
@@ -43,14 +41,6 @@ const router = createBrowserRouter([
           {
             path: "/sales",
             element: <Sales />,
-          },
-          {
-            path: "/wholesale-credit",
-            element: <WholesaleCredit />,
-          },
-          {
-            path: "/supplier-credit",
-            element: <SupplierCredit />,
           },
           {
             path: "/supplier-management",

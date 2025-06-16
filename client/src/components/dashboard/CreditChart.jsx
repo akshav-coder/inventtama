@@ -1,33 +1,35 @@
+import React from "react";
 import {
   BarChart,
   Bar,
   XAxis,
   YAxis,
+  CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
 } from "recharts";
-import { useGetWholesaleCreditsQuery } from "../../services/wholesaleCreditApi";
+import { Paper, Typography, Box } from "@mui/material";
 
 const CreditChart = () => {
-  const { data } = useGetWholesaleCreditsQuery();
-
-  const chartData =
-    data?.map((item) => ({
-      name: item.buyerName,
-      Balance: Number(item.currentBalance || 0),
-      Paid: Number(item.totalAmountPaid || 0),
-    })) || [];
-
   return (
-    <ResponsiveContainer width="100%" height={240}>
-      <BarChart data={chartData}>
-        <XAxis dataKey="name" />
-        <YAxis />
-        <Tooltip />
-        <Bar dataKey="Balance" fill="#f44336" />
-        <Bar dataKey="Paid" fill="#4caf50" />
-      </BarChart>
-    </ResponsiveContainer>
+    <Paper sx={{ p: 2, height: 400 }}>
+      <Typography variant="h6" gutterBottom>
+        Credit Overview
+      </Typography>
+      <Box
+        sx={{
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Typography variant="body1" color="text.secondary">
+          Credit data is no longer available
+        </Typography>
+      </Box>
+    </Paper>
   );
 };
 

@@ -21,8 +21,6 @@ import {
   EmojiNature,
   PeopleOutlineOutlined,
   Diversity3Outlined,
-  ReceiptLong,
-  Payment,
   Business,
   PeopleAlt,
 } from "@mui/icons-material";
@@ -38,8 +36,6 @@ const menuItems = [
   { text: "Transfers", icon: <LocalOffer />, path: "/transfers" },
   { text: "Processing", icon: <Factory />, path: "/processing" },
   { text: "Sales", icon: <AccountBalance />, path: "/sales" },
-  { text: "Reciept", icon: <ReceiptLong />, path: "/wholesale-credit" },
-  { text: "Payment", icon: <Payment />, path: "/supplier-credit" },
   {
     text: "Supplier Management",
     icon: <Business />,
