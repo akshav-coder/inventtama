@@ -239,7 +239,9 @@ const TransferFormModal = ({ open, onClose, initialValues }) => {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose} variant="outlined">
+            Cancel
+          </Button>
           <Button
             type="submit"
             variant="contained"
