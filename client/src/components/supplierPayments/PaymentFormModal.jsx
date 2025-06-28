@@ -94,6 +94,7 @@ const PaymentFormModal = ({ open, onClose, onSubmit, initialValues }) => {
                 <MenuItem value="cash">Cash</MenuItem>
                 <MenuItem value="bank">Bank Transfer</MenuItem>
                 <MenuItem value="upi">UPI</MenuItem>
+                <MenuItem value="credit">Credit</MenuItem>
               </TextField>
             </Grid>
             {formik.values.paymentMode === "upi" && (

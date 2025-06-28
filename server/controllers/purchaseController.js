@@ -66,6 +66,26 @@ exports.createPurchase = async (req, res) => {
     }
     purchase.tamarindItems = data.tamarindItems;
     await purchase.save();
+
+    // if purchase was on credit, create a matching supplier payment entry
+    if (purchase.paymentType === "credit") {
+      const Supplier = require("../models/Supplier");
+      const SupplierPayment = require("../models/SupplierPayment");
+      const supplier = await Supplier.findById(purchase.supplierId);
+      if (supplier) {
+        supplier.outstandingBalance =
+          (supplier.outstandingBalance || 0) + (purchase.totalAmount || 0);
+        await supplier.save();
+      }
+      await SupplierPayment.create({
+        supplier: purchase.supplierId,
+        amount: purchase.totalAmount || 0,
+        paymentDate: purchase.purchaseDate,
+        paymentMode: "credit",
+        notes: `Credit purchase ${purchase.invoiceNumber}`,
+      });
+    }
+
     res.status(201).json(purchase);
   } catch (error) {
     res.status(400).json({

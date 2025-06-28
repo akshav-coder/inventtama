@@ -17,7 +17,8 @@ const supplierPaymentSchema = new mongoose.Schema(
     },
     paymentMode: {
       type: String,
-      enum: ["cash", "bank", "upi"],
+      // allow credit entries generated from purchases
+      enum: ["cash", "bank", "upi", "credit"],
       required: true,
     },
     upiTransactionId: String,

@@ -99,9 +99,12 @@ const SupplierPayments = () => {
     switch (mode?.toLowerCase()) {
       case "cash":
         return "success";
+      case "bank":
       case "bank transfer":
         return "info";
       case "cheque":
+        return "warning";
+      case "credit":
         return "warning";
       default:
         return "default";
@@ -112,10 +115,13 @@ const SupplierPayments = () => {
     switch (mode?.toLowerCase()) {
       case "cash":
         return "💵";
+      case "bank":
       case "bank transfer":
         return "🏦";
       case "cheque":
         return "📄";
+      case "credit":
+        return "💳";
       default:
         return "💰";
     }
