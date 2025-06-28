@@ -6,10 +6,13 @@ exports.createProcessing = async (req, res) => {
   try {
     const { date, manufacturingUnit, inputs, output, team, notes } = req.body;
 
-    // Validate manufacturing unit exists
+    // Validate manufacturing unit exists and is of type 'unit'
     const unit = await Storage.findById(manufacturingUnit);
     if (!unit) {
       return res.status(404).json({ message: "Manufacturing unit not found" });
+    }
+    if (unit.type !== "unit") {
+      return res.status(400).json({ message: "Processing can only be done in manufacturing units" });
     }
 
     const processing = new Processing({
@@ -34,7 +37,6 @@ exports.getAllProcessing = async (req, res) => {
   try {
     const processing = await Processing.find()
       .populate("manufacturingUnit", "name")
-      .populate("inputs.tamarindType", "name")
       .populate("createdBy", "name")
       .sort({ date: -1 });
     res.json(processing);
@@ -48,7 +50,6 @@ exports.getProcessingById = async (req, res) => {
   try {
     const processing = await Processing.findById(req.params.id)
       .populate("manufacturingUnit", "name")
-      .populate("inputs.tamarindType", "name")
       .populate("createdBy", "name");
 
     if (!processing) {

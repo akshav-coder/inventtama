@@ -41,7 +41,7 @@ import { useGetStoragesQuery } from "../services/storageApi";
 
 const Processing = () => {
   const [manufacturingUnits, setManufacturingUnits] = useState([]);
-  const [tamarindTypes, setTamarindTypes] = useState([]);
+  const tamarindTypes = ["Whole", "Raw Pod", "Seedless", "Sour"];
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
     manufacturingUnit: "",
@@ -63,7 +63,7 @@ const Processing = () => {
 
   const { data: processingRecords = [], isLoading: isLoadingProcessing } =
     useGetProcessingLogsQuery();
-  const { data: storageData = [] } = useGetStoragesQuery("manufacturing");
+  const { data: storageData = [] } = useGetStoragesQuery("unit");
   const [createProcessingLog] = useCreateProcessingLogMutation();
   const [updateProcessingLog] = useUpdateProcessingLogMutation();
   const [deleteProcessingLog] = useDeleteProcessingLogMutation();
@@ -131,7 +131,7 @@ const Processing = () => {
       date: new Date(record.date).toISOString().split("T")[0],
       manufacturingUnit: record.manufacturingUnit._id,
       inputs: record.inputs.map((input) => ({
-        tamarindType: input.tamarindType._id,
+        tamarindType: input.tamarindType,
         quantity: input.quantity,
       })),
       output: {
@@ -217,8 +217,7 @@ const Processing = () => {
                   <TableCell>
                     {record.inputs
                       .map(
-                        (input) =>
-                          `${input.tamarindType.name} (${input.quantity}kg)`
+                        (input) => `${input.tamarindType} (${input.quantity}kg)`
                       )
                       .join(", ")}
                   </TableCell>
@@ -302,8 +301,8 @@ const Processing = () => {
                           label="Tamarind Type"
                         >
                           {tamarindTypes.map((type) => (
-                            <MenuItem key={type._id} value={type._id}>
-                              {type.name}
+                            <MenuItem key={type} value={type}>
+                              {type}
                             </MenuItem>
                           ))}
                         </Select>

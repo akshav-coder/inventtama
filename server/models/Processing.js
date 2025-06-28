@@ -15,8 +15,7 @@ const processingSchema = new mongoose.Schema(
     inputs: [
       {
         tamarindType: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "TamarindType",
+          type: String,
           required: true,
         },
         quantity: {
