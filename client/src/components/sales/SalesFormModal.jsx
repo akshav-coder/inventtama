@@ -6,128 +6,207 @@ import {
   Button,
   Grid,
   TextField,
-  MenuItem,
+  IconButton,
 } from "@mui/material";
-import { useState, useEffect } from "react";
+import { RemoveCircle } from "@mui/icons-material";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { useGetCustomersQuery } from "../../services/customersApi";
 
-const initialForm = {
-  date: "",
-  customerName: "",
-  customerType: "",
-  productSold: "Paste",
-  quantity: "",
-  pricePerKg: "",
-  amountPaid: "",
-  paymentMode: "",
-  notes: "",
-};
+const itemSchema = Yup.object({
+  pasteType: Yup.string().required("Paste type is required"),
+  quantity: Yup.number().moreThan(0).required("Quantity is required"),
+  rate: Yup.number().moreThan(0).required("Rate is required"),
+});
 
-const fieldConfig = [
-  { name: "date", label: "Date", type: "date", grid: 6 },
-  { name: "customerName", label: "Customer Name", grid: 6 },
-  {
-    name: "customerType",
-    label: "Customer Type",
-    select: true,
-    options: ["Wholesale", "Retail"],
-    grid: 6,
-  },
-  {
-    name: "quantity",
-    label: "Quantity (Kg)",
-    type: "number",
-    grid: 6,
-  },
-  {
-    name: "pricePerKg",
-    label: "Price per Kg",
-    type: "number",
-    grid: 6,
-  },
-  {
-    name: "amountPaid",
-    label: "Amount Paid",
-    type: "number",
-    grid: 6,
-  },
-  {
-    name: "paymentMode",
-    label: "Payment Mode",
-    select: true,
-    options: ["Cash", "Credit"],
-    grid: 6,
-  },
-  {
-    name: "notes",
-    label: "Notes",
-    multiline: true,
-    rows: 2,
-    grid: 12,
-  },
-];
+const validationSchema = Yup.object({
+  invoiceDate: Yup.string().required("Date is required"),
+  customer: Yup.string().required("Customer is required"),
+  paymentType: Yup.string().required("Payment type is required"),
+  dueDate: Yup.string().when("paymentType", {
+    is: "credit",
+    then: (schema) => schema.required("Due date is required"),
+  }),
+  items: Yup.array().of(itemSchema).min(1, "At least one item is required"),
+});
+
+const defaultItem = { pasteType: "", quantity: "", rate: "" };
 
 const SalesFormModal = ({ open, onClose, onSubmit, initialValues }) => {
-  const [form, setForm] = useState(initialForm);
+  const { data: customers = [] } = useGetCustomersQuery();
 
-  useEffect(() => {
-    setForm(initialValues || initialForm);
-  }, [initialValues, open]);
+  const formik = useFormik({
+    initialValues: {
+      invoiceDate: "",
+      customer: "",
+      paymentType: "cash",
+      dueDate: "",
+      amountPaid: "",
+      notes: "",
+      items: [defaultItem],
+      ...initialValues,
+    },
+    validationSchema,
+    enableReinitialize: true,
+    onSubmit: (values) => {
+      const items = values.items.map((it) => ({
+        ...it,
+        total: parseFloat(it.quantity) * parseFloat(it.rate),
+      }));
+      onSubmit({ ...values, items });
+      onClose();
+    },
+  });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+  const addItem = () => {
+    formik.setFieldValue("items", [...formik.values.items, defaultItem]);
   };
 
-  const handleSubmit = () => {
-    const quantity = parseFloat(form.quantity) || 0;
-    const pricePerKg = parseFloat(form.pricePerKg) || 0;
-    const amountPaid = parseFloat(form.amountPaid) || 0;
-
-    const totalAmount = quantity * pricePerKg;
-    const remainingBalance =
-      form.customerType === "Wholesale" ? totalAmount - amountPaid : 0;
-
-    onSubmit({ ...form, totalAmount, remainingBalance });
-    onClose();
+  const removeItem = (idx) => {
+    const arr = formik.values.items.filter((_, i) => i !== idx);
+    formik.setFieldValue("items", arr);
   };
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>{initialValues ? "Edit" : "Add"} Sale</DialogTitle>
-      <DialogContent>
-        <Grid container spacing={2} mt={1}>
-          {fieldConfig.map((field) => (
-            <Grid size={{ xs: 12, sm: 6, md: 6 }} key={field.name}>
+      <form onSubmit={formik.handleSubmit}>
+        <DialogContent>
+          <Grid container spacing={2} mb={1}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
-                name={field.name}
-                label={field.label}
-                type={field.type || "text"}
-                value={form[field.name]}
-                onChange={handleChange}
-                multiline={field.multiline || false}
-                rows={field.rows || 1}
-                select={field.select || false}
+                name="invoiceDate"
+                label="Date"
+                type="date"
+                value={formik.values.invoiceDate}
+                onChange={formik.handleChange}
+                InputLabelProps={{ shrink: true }}
+                error={Boolean(formik.errors.invoiceDate)}
+                helperText={formik.errors.invoiceDate}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                select
+                fullWidth
+                name="customer"
+                label="Customer"
+                value={formik.values.customer}
+                onChange={formik.handleChange}
+                error={Boolean(formik.errors.customer)}
+                helperText={formik.errors.customer}
               >
-                {field.select &&
-                  field.options.map((opt) => (
-                    <MenuItem key={opt} value={opt}>
-                      {opt}
-                    </MenuItem>
-                  ))}
+                {customers.map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.name}
+                  </option>
+                ))}
               </TextField>
             </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                select
+                fullWidth
+                name="paymentType"
+                label="Payment Type"
+                value={formik.values.paymentType}
+                onChange={formik.handleChange}
+                error={Boolean(formik.errors.paymentType)}
+                helperText={formik.errors.paymentType}
+              >
+                <option value="cash">Cash</option>
+                <option value="credit">Credit</option>
+              </TextField>
+            </Grid>
+            {formik.values.paymentType === "credit" && (
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth
+                  name="dueDate"
+                  label="Due Date"
+                  type="date"
+                  value={formik.values.dueDate}
+                  onChange={formik.handleChange}
+                  InputLabelProps={{ shrink: true }}
+                  error={Boolean(formik.errors.dueDate)}
+                  helperText={formik.errors.dueDate}
+                />
+              </Grid>
+            )}
+            <Grid size={12}>
+              <TextField
+                fullWidth
+                name="amountPaid"
+                label="Amount Paid"
+                type="number"
+                value={formik.values.amountPaid}
+                onChange={formik.handleChange}
+              />
+            </Grid>
+          </Grid>
+          {formik.values.items.map((item, idx) => (
+            <Grid container spacing={2} key={idx} mb={1} alignItems="center">
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <TextField
+                  fullWidth
+                  label="Paste Type"
+                  name={`items[${idx}].pasteType`}
+                  value={item.pasteType}
+                  onChange={formik.handleChange}
+                  error={formik.errors.items?.[idx]?.pasteType}
+                  helperText={formik.errors.items?.[idx]?.pasteType}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 3 }}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Qty"
+                  name={`items[${idx}].quantity`}
+                  value={item.quantity}
+                  onChange={formik.handleChange}
+                  error={formik.errors.items?.[idx]?.quantity}
+                  helperText={formik.errors.items?.[idx]?.quantity}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 3 }}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Rate"
+                  name={`items[${idx}].rate`}
+                  value={item.rate}
+                  onChange={formik.handleChange}
+                  error={formik.errors.items?.[idx]?.rate}
+                  helperText={formik.errors.items?.[idx]?.rate}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 2 }}>
+                <IconButton color="error" onClick={() => removeItem(idx)}>
+                  <RemoveCircle />
+                </IconButton>
+              </Grid>
+            </Grid>
           ))}
-        </Grid>
-      </DialogContent>
-      <DialogActions>
-        <Button variant="outlined" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button variant="contained" onClick={handleSubmit}>
-          {initialValues ? "Update" : "Create"}
-        </Button>
-      </DialogActions>
+          <Button onClick={addItem}>Add Item</Button>
+          <TextField
+            fullWidth
+            name="notes"
+            label="Notes"
+            multiline
+            rows={2}
+            value={formik.values.notes}
+            onChange={formik.handleChange}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="contained">
+            {initialValues ? "Update" : "Create"}
+          </Button>
+        </DialogActions>
+      </form>
     </Dialog>
   );
 };
