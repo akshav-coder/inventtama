@@ -7,6 +7,7 @@ import {
   Grid,
   TextField,
   IconButton,
+  MenuItem,
 } from "@mui/material";
 import { RemoveCircle } from "@mui/icons-material";
 import { useFormik } from "formik";
@@ -30,7 +31,7 @@ const validationSchema = Yup.object({
   items: Yup.array().of(itemSchema).min(1, "At least one item is required"),
 });
 
-const defaultItem = { pasteType: "", quantity: "", rate: "" };
+const createItem = () => ({ pasteType: "", quantity: "", rate: "" });
 
 const SalesFormModal = ({ open, onClose, onSubmit, initialValues }) => {
   const { data: customers = [] } = useGetCustomersQuery();
@@ -43,8 +44,13 @@ const SalesFormModal = ({ open, onClose, onSubmit, initialValues }) => {
       dueDate: "",
       amountPaid: "",
       notes: "",
-      items: [defaultItem],
       ...initialValues,
+      items:
+        initialValues?.items?.map((it) => ({
+          pasteType: it.pasteType,
+          quantity: it.quantity,
+          rate: it.rate,
+        })) || [createItem()],
     },
     validationSchema,
     enableReinitialize: true,
@@ -59,7 +65,7 @@ const SalesFormModal = ({ open, onClose, onSubmit, initialValues }) => {
   });
 
   const addItem = () => {
-    formik.setFieldValue("items", [...formik.values.items, defaultItem]);
+    formik.setFieldValue("items", [...formik.values.items, createItem()]);
   };
 
   const removeItem = (idx) => {
@@ -98,9 +104,9 @@ const SalesFormModal = ({ open, onClose, onSubmit, initialValues }) => {
                 helperText={formik.errors.customer}
               >
                 {customers.map((c) => (
-                  <option key={c._id} value={c._id}>
+                  <MenuItem key={c._id} value={c._id}>
                     {c.name}
-                  </option>
+                  </MenuItem>
                 ))}
               </TextField>
             </Grid>
@@ -115,8 +121,8 @@ const SalesFormModal = ({ open, onClose, onSubmit, initialValues }) => {
                 error={Boolean(formik.errors.paymentType)}
                 helperText={formik.errors.paymentType}
               >
-                <option value="cash">Cash</option>
-                <option value="credit">Credit</option>
+                <MenuItem value="cash">Cash</MenuItem>
+                <MenuItem value="credit">Credit</MenuItem>
               </TextField>
             </Grid>
             {formik.values.paymentType === "credit" && (
