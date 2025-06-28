@@ -12,6 +12,7 @@ import CustomerPage from "../pages/CustomerPage";
 import StorageAndLotPage from "../pages/StorageAndLotPage";
 import SupplierPayments from "../pages/SupplierPayments";
 import CustomerReceipts from "../pages/CustomerReceipts";
+import Reports from "../pages/Reports";
 
 const router = createBrowserRouter([
   {
@@ -43,6 +44,10 @@ const router = createBrowserRouter([
           {
             path: "/sales",
             element: <Sales />,
+          },
+          {
+            path: "/reports",
+            element: <Reports />,
           },
           {
             path: "/supplier-payments",
