@@ -10,6 +10,7 @@ import Dashboard from "../pages/Dashboard";
 import SupplierPage from "../pages/SupplierPage";
 import CustomerPage from "../pages/CustomerPage";
 import StorageAndLotPage from "../pages/StorageAndLotPage";
+import SupplierPayments from "../pages/SupplierPayments";
 
 const router = createBrowserRouter([
   {
@@ -41,6 +42,10 @@ const router = createBrowserRouter([
           {
             path: "/sales",
             element: <Sales />,
+          },
+          {
+            path: "/supplier-payments",
+            element: <SupplierPayments />,
           },
           {
             path: "/supplier-management",

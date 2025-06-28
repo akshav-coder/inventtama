@@ -36,6 +36,7 @@ const menuItems = [
   { text: "Transfers", icon: <LocalOffer />, path: "/transfers" },
   { text: "Processing", icon: <Factory />, path: "/processing" },
   { text: "Sales", icon: <AccountBalance />, path: "/sales" },
+  { text: "Supplier Payments", icon: <Inventory />, path: "/supplier-payments" },
   {
     text: "Supplier Management",
     icon: <Business />,
