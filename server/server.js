@@ -12,6 +12,7 @@ const customerRoutes = require("./routes/CustomerRoutes");
 const lotRoutes = require("./routes/lotRoutes");
 const supplierPaymentRoutes = require("./routes/supplierPaymentRoutes");
 const customerReceiptRoutes = require("./routes/customerReceiptRoutes");
+const reportRoutes = require("./routes/reportRoutes");
 
 dotenv.config();
 connectDB();
@@ -31,6 +32,7 @@ app.use("/api/customers", customerRoutes);
 app.use("/api", storageRoutes);
 app.use("/api/purchases", require("./routes/purchaseRoutes"));
 app.use("/api", lotRoutes);
+app.use("/api/reports", reportRoutes);
 
 app.get("/", (req, res) => {
   res.send("Tamarind Tracker API is running...");

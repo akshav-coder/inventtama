@@ -38,6 +38,7 @@ const menuItems = [
   { text: "Sales", icon: <AccountBalance />, path: "/sales" },
   { text: "Supplier Payments", icon: <Inventory />, path: "/supplier-payments" },
   { text: "Customer Receipts", icon: <PeopleOutlineOutlined />, path: "/customer-receipts" },
+  { text: "Reports", icon: <Diversity3Outlined />, path: "/reports" },
   {
     text: "Supplier Management",
     icon: <Business />,

@@ -23,6 +23,14 @@ per customer.
 The frontend includes a **Customer Receipts** page accessible from the sidebar
 menu. Use it to record payments received and manage existing receipts.
 
+## Reports Module
+
+The application includes a dedicated Reports page accessible from the sidebar.
+Use it to view summaries for purchases, sales, transfers, processing, current
+stock and payment history. Select a report type and date range to fetch data
+from the backend endpoints under `/api/reports`. Results are shown in a table
+and a simple bar chart for quick visual reference.
+
 ### Running the Frontend
 
 From the repository root:
