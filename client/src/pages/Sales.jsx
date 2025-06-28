@@ -2,8 +2,6 @@ import {
   Box,
   Typography,
   Button,
-  IconButton,
-  Tooltip,
   Table,
   TableBody,
   TableCell,
@@ -12,20 +10,22 @@ import {
   TableRow,
   Paper,
   CircularProgress,
+  IconButton,
+  Tooltip,
   Dialog,
   DialogTitle,
   DialogActions,
 } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { useState } from "react";
+import SalesFormModal from "../components/sales/SalesFormModal";
 import {
   useGetSalesQuery,
   useCreateSaleMutation,
   useUpdateSaleMutation,
   useDeleteSaleMutation,
 } from "../services/salesApi";
-import { useState } from "react";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import SalesFormModal from "../components/sales/SalesFormModal";
 
 const Sales = () => {
   const { data: sales, isLoading } = useGetSalesQuery();
@@ -37,27 +37,23 @@ const Sales = () => {
   const [editData, setEditData] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null });
 
-  const handleOpenModal = (sale = null) => {
+  const handleOpen = (sale = null) => {
     setEditData(sale);
     setModalOpen(true);
   };
 
-  const handleCloseModal = () => {
+  const handleClose = () => {
     setModalOpen(false);
     setEditData(null);
   };
 
-  const handleFormSubmit = async (formData) => {
+  const handleSubmit = async (data) => {
     if (editData) {
-      await updateSale({ id: editData._id, ...formData });
+      await updateSale({ id: editData._id, ...data });
     } else {
-      await createSale(formData);
+      await createSale(data);
     }
-    handleCloseModal();
-  };
-
-  const handleDelete = (id) => {
-    setDeleteDialog({ open: true, id });
+    handleClose();
   };
 
   const confirmDelete = async () => {
@@ -67,44 +63,29 @@ const Sales = () => {
 
   return (
     <Box>
-      {/* Header */}
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={2}
-      >
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h5">Sales</Typography>
-        <Button variant="contained" onClick={() => handleOpenModal()}>
-          Add Sale
-        </Button>
+        <Button variant="contained" onClick={() => handleOpen()}>Add Sale</Button>
       </Box>
 
-      {/* Form Modal */}
       <SalesFormModal
         open={modalOpen}
-        onClose={handleCloseModal}
-        onSubmit={handleFormSubmit}
+        onClose={handleClose}
+        onSubmit={handleSubmit}
         initialValues={editData}
       />
 
-      {/* Delete Dialog */}
       <Dialog
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, id: null })}
       >
         <DialogTitle>Are you sure you want to delete this sale?</DialogTitle>
         <DialogActions>
-          <Button onClick={() => setDeleteDialog({ open: false, id: null })}>
-            Cancel
-          </Button>
-          <Button color="error" onClick={confirmDelete}>
-            Delete
-          </Button>
+          <Button onClick={() => setDeleteDialog({ open: false, id: null })}>Cancel</Button>
+          <Button color="error" onClick={confirmDelete}>Delete</Button>
         </DialogActions>
       </Dialog>
 
-      {/* Table */}
       {isLoading ? (
         <CircularProgress />
       ) : (
@@ -114,36 +95,29 @@ const Sales = () => {
               <TableRow>
                 <TableCell>Date</TableCell>
                 <TableCell>Customer</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell>Qty (Kg)</TableCell>
-                <TableCell>₹/Kg</TableCell>
-                <TableCell>Total</TableCell>
+                <TableCell>Total Amount</TableCell>
                 <TableCell>Paid</TableCell>
-                <TableCell>Remaining</TableCell>
-                <TableCell>Payment</TableCell>
-                <TableCell>Notes</TableCell>
+                <TableCell>Payment Type</TableCell>
+                <TableCell>Due Date</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {sales?.map((sale) => (
                 <TableRow key={sale._id}>
-                  <TableCell>{sale.date?.split("T")[0]}</TableCell>
-                  <TableCell>{sale.customerName}</TableCell>
-                  <TableCell>{sale.customerType}</TableCell>
-                  <TableCell>{sale.quantity}</TableCell>
-                  <TableCell>{sale.pricePerKg}</TableCell>
+                  <TableCell>{new Date(sale.invoiceDate).toLocaleDateString()}</TableCell>
+                  <TableCell>{sale.customer?.name || sale.customer}</TableCell>
                   <TableCell>{sale.totalAmount}</TableCell>
                   <TableCell>{sale.amountPaid}</TableCell>
-                  <TableCell>{sale.remainingBalance}</TableCell>
-                  <TableCell>{sale.paymentMode}</TableCell>
-                  <TableCell>{sale.notes}</TableCell>
+                  <TableCell>{sale.paymentType}</TableCell>
+                  <TableCell>
+                    {sale.paymentType === "credit" && sale.dueDate
+                      ? new Date(sale.dueDate).toLocaleDateString()
+                      : "-"}
+                  </TableCell>
                   <TableCell align="center">
                     <Tooltip title="Edit">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenModal(sale)}
-                      >
+                      <IconButton size="small" onClick={() => handleOpen(sale)}>
                         <EditIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
@@ -151,7 +125,7 @@ const Sales = () => {
                       <IconButton
                         size="small"
                         color="error"
-                        onClick={() => handleDelete(sale._id)}
+                        onClick={() => setDeleteDialog({ open: true, id: sale._id })}
                       >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
