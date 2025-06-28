@@ -96,7 +96,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
       }}
     >
       {/* Header - Only show on desktop */}
-      {!isMobile && (
+      {!isMobile ? (
         <Box
           sx={{
             p: 3,
@@ -132,6 +132,8 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
             Inventory Management
           </Typography>
         </Box>
+      ) : (
+        <Box sx={{ p: 2, mt: 8 }} />
       )}
 
       {/* Navigation Items */}
