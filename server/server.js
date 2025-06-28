@@ -10,6 +10,7 @@ const authRoutes = require("./routes/authRoutes");
 const supplierRoutes = require("./routes/supplierRoutes");
 const customerRoutes = require("./routes/CustomerRoutes");
 const lotRoutes = require("./routes/lotRoutes");
+const supplierPaymentRoutes = require("./routes/supplierPaymentRoutes");
 
 dotenv.config();
 connectDB();
@@ -23,6 +24,7 @@ app.use("/api/unit-transfers", unitTransferRoutes);
 app.use("/api/sales", saleRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/suppliers", supplierRoutes);
+app.use("/api/supplier-payments", supplierPaymentRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api", storageRoutes);
 app.use("/api/purchases", require("./routes/purchaseRoutes"));
