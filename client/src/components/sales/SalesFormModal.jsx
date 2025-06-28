@@ -44,7 +44,7 @@ const SalesFormModal = ({ open, onClose, onSubmit, initialValues }) => {
       dueDate: "",
       amountPaid: "",
       notes: "",
-      items: [defaultItem],
+      items: [JSON.parse(JSON.stringify(defaultItem))],
       ...initialValues,
     },
     validationSchema,
@@ -60,7 +60,10 @@ const SalesFormModal = ({ open, onClose, onSubmit, initialValues }) => {
   });
 
   const addItem = () => {
-    formik.setFieldValue("items", [...formik.values.items, defaultItem]);
+    formik.setFieldValue("items", [
+      ...formik.values.items,
+      JSON.parse(JSON.stringify(defaultItem)),
+    ]);
   };
 
   const removeItem = (idx) => {
