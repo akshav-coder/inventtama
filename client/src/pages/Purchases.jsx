@@ -21,6 +21,9 @@ import {
   Grid,
   Divider,
   useTheme,
+  Stack,
+  Avatar,
+  alpha,
 } from "@mui/material";
 import {
   useGetAllPurchasesQuery,
@@ -34,6 +37,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import { useUpdatePurchaseMutation } from "../services/purchaseApi";
+import { useSnackbar } from "../components/common/SnackbarProvider";
 
 const Purchases = () => {
   const theme = useTheme();
@@ -41,18 +45,25 @@ const Purchases = () => {
   const [createPurchase] = useCreatePurchaseMutation();
   const [deletePurchase] = useDeletePurchaseMutation();
   const [updatePurchase] = useUpdatePurchaseMutation();
+  const showSnackbar = useSnackbar();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, id: null });
 
   const handleSubmit = async (formData) => {
-    if (editItem) {
-      await updatePurchase({ id: editItem._id, ...formData });
-    } else {
-      await createPurchase(formData);
+    try {
+      if (editItem) {
+        await updatePurchase({ id: editItem._id, ...formData }).unwrap();
+        showSnackbar("Purchase updated successfully", "success");
+      } else {
+        await createPurchase(formData).unwrap();
+        showSnackbar("Purchase created successfully", "success");
+      }
+      setEditItem(null);
+    } catch (error) {
+      showSnackbar("Error saving purchase", "error");
     }
-    setEditItem(null);
   };
 
   const handleEdit = (purchase) => {
@@ -65,8 +76,13 @@ const Purchases = () => {
   };
 
   const confirmDelete = async () => {
-    await deletePurchase(deleteConfirm.id);
-    setDeleteConfirm({ open: false, id: null });
+    try {
+      await deletePurchase(deleteConfirm.id).unwrap();
+      showSnackbar("Purchase deleted successfully", "success");
+      setDeleteConfirm({ open: false, id: null });
+    } catch (error) {
+      showSnackbar("Failed to delete purchase", "error");
+    }
   };
 
   // Calculate summary statistics
@@ -95,77 +111,84 @@ const Purchases = () => {
     }
   };
 
+  const getPaymentTypeIcon = (paymentType) => {
+    switch (paymentType?.toLowerCase()) {
+      case "cash":
+        return "💵";
+      case "credit":
+        return "💳";
+      case "bank transfer":
+        return "🏦";
+      default:
+        return "💰";
+    }
+  };
+
   return (
-    <Box sx={{ p: 3, backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
+    <Box sx={{ p: 3, backgroundColor: "#f8fafc", minHeight: "100vh" }}>
       {/* Header Section */}
-      <Box
+      <Card
+        elevation={0}
         sx={{
-          mb: 4,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 2,
+          mb: 3,
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          color: "white",
+          borderRadius: 3,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <CardContent sx={{ p: 4 }}>
           <Box
-            sx={{
-              backgroundColor: theme.palette.primary.main,
-              borderRadius: "50%",
-              p: 1.5,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-            }}
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            flexWrap="wrap"
+            gap={2}
           >
-            <ShoppingCartIcon sx={{ color: "white", fontSize: 28 }} />
-          </Box>
-          <Box>
-            <Typography
-              variant="h4"
+            <Box>
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 700,
+                  mb: 1,
+                  textShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                }}
+              >
+                Purchase Entries
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{
+                  opacity: 0.9,
+                  fontWeight: 300,
+                }}
+              >
+                Manage and track tamarind purchase records from suppliers
+              </Typography>
+            </Box>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setModalOpen(true)}
               sx={{
-                fontWeight: 700,
-                color: theme.palette.text.primary,
-                mb: 0.5,
+                backgroundColor: "rgba(255,255,255,0.2)",
+                color: "white",
+                border: "1px solid rgba(255,255,255,0.3)",
+                px: 3,
+                py: 1.5,
+                borderRadius: 2,
+                fontWeight: 600,
+                "&:hover": {
+                  backgroundColor: "rgba(255,255,255,0.3)",
+                  transform: "translateY(-2px)",
+                  transition: "all 0.2s ease-in-out",
+                },
               }}
             >
-              Purchase Entries
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                color: theme.palette.text.secondary,
-                fontWeight: 500,
-              }}
-            >
-              Manage your tamarind purchase records
-            </Typography>
+              Add Purchase
+            </Button>
           </Box>
-        </Box>
-
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setModalOpen(true)}
-          sx={{
-            px: 3,
-            py: 1.5,
-            borderRadius: 2,
-            textTransform: "none",
-            fontWeight: 600,
-            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-            "&:hover": {
-              boxShadow: "0 6px 20px rgba(0,0,0,0.2)",
-              transform: "translateY(-1px)",
-            },
-            transition: "all 0.3s ease",
-          }}
-        >
-          Add Purchase
-        </Button>
-      </Box>
+        </CardContent>
+      </Card>
 
       {/* Statistics Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -193,14 +216,14 @@ const Purchases = () => {
                 <Box>
                   <Typography
                     variant="h4"
-                    sx={{ fontWeight: 700, color: theme.palette.primary.main }}
+                    sx={{ fontWeight: 700, color: "#667eea" }}
                   >
                     {totalPurchases}
                   </Typography>
                   <Typography
                     variant="body2"
                     sx={{
-                      color: theme.palette.text.secondary,
+                      color: "text.secondary",
                       fontWeight: 500,
                     }}
                   >
@@ -209,7 +232,7 @@ const Purchases = () => {
                 </Box>
                 <Box
                   sx={{
-                    backgroundColor: theme.palette.primary.light,
+                    backgroundColor: alpha("#667eea", 0.1),
                     borderRadius: "50%",
                     p: 1.5,
                     display: "flex",
@@ -217,9 +240,7 @@ const Purchases = () => {
                     justifyContent: "center",
                   }}
                 >
-                  <ShoppingCartIcon
-                    sx={{ color: theme.palette.primary.main, fontSize: 24 }}
-                  />
+                  <ShoppingCartIcon sx={{ color: "#667eea", fontSize: 24 }} />
                 </Box>
               </Box>
             </CardContent>
@@ -250,14 +271,14 @@ const Purchases = () => {
                 <Box>
                   <Typography
                     variant="h4"
-                    sx={{ fontWeight: 700, color: theme.palette.success.main }}
+                    sx={{ fontWeight: 700, color: "#4caf50" }}
                   >
                     {totalItems}
                   </Typography>
                   <Typography
                     variant="body2"
                     sx={{
-                      color: theme.palette.text.secondary,
+                      color: "text.secondary",
                       fontWeight: 500,
                     }}
                   >
@@ -266,7 +287,7 @@ const Purchases = () => {
                 </Box>
                 <Box
                   sx={{
-                    backgroundColor: theme.palette.success.light,
+                    backgroundColor: alpha("#4caf50", 0.1),
                     borderRadius: "50%",
                     p: 1.5,
                     display: "flex",
@@ -274,9 +295,7 @@ const Purchases = () => {
                     justifyContent: "center",
                   }}
                 >
-                  <ShoppingCartIcon
-                    sx={{ color: theme.palette.success.main, fontSize: 24 }}
-                  />
+                  <ShoppingCartIcon sx={{ color: "#4caf50", fontSize: 24 }} />
                 </Box>
               </Box>
             </CardContent>
@@ -307,14 +326,14 @@ const Purchases = () => {
                 <Box>
                   <Typography
                     variant="h4"
-                    sx={{ fontWeight: 700, color: theme.palette.info.main }}
+                    sx={{ fontWeight: 700, color: "#2196f3" }}
                   >
                     ₹{totalAmount.toLocaleString()}
                   </Typography>
                   <Typography
                     variant="body2"
                     sx={{
-                      color: theme.palette.text.secondary,
+                      color: "text.secondary",
                       fontWeight: 500,
                     }}
                   >
@@ -323,7 +342,7 @@ const Purchases = () => {
                 </Box>
                 <Box
                   sx={{
-                    backgroundColor: theme.palette.info.light,
+                    backgroundColor: alpha("#2196f3", 0.1),
                     borderRadius: "50%",
                     p: 1.5,
                     display: "flex",
@@ -331,9 +350,7 @@ const Purchases = () => {
                     justifyContent: "center",
                   }}
                 >
-                  <ShoppingCartIcon
-                    sx={{ color: theme.palette.info.main, fontSize: 24 }}
-                  />
+                  <ShoppingCartIcon sx={{ color: "#2196f3", fontSize: 24 }} />
                 </Box>
               </Box>
             </CardContent>
@@ -358,35 +375,31 @@ const Purchases = () => {
         PaperProps={{
           sx: {
             borderRadius: 3,
-            boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+            minWidth: 400,
           },
         }}
       >
         <DialogTitle sx={{ pb: 1 }}>
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Confirm Deletion
+            Delete Purchase
           </Typography>
-          <Typography
-            variant="body2"
-            sx={{ color: theme.palette.text.secondary, mt: 1 }}
-          >
+          <Typography variant="body2" color="text.secondary">
             Are you sure you want to delete this purchase? This action cannot be
             undone.
           </Typography>
         </DialogTitle>
         <DialogActions sx={{ p: 3, pt: 1 }}>
           <Button
-            variant="outlined"
             onClick={() => setDeleteConfirm({ open: false, id: null })}
-            sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
+            sx={{ borderRadius: 2 }}
           >
             Cancel
           </Button>
           <Button
-            variant="contained"
             color="error"
             onClick={confirmDelete}
-            sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
+            variant="contained"
+            sx={{ borderRadius: 2 }}
           >
             Delete
           </Button>
@@ -395,77 +408,58 @@ const Purchases = () => {
 
       {/* Table Section */}
       {isLoading ? (
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            py: 8,
-          }}
-        >
-          <CircularProgress size={60} />
-        </Box>
+        <Card elevation={2} sx={{ borderRadius: 3 }}>
+          <CardContent sx={{ p: 6, textAlign: "center" }}>
+            <CircularProgress size={60} />
+            <Typography variant="h6" sx={{ mt: 2, color: "text.secondary" }}>
+              Loading purchases...
+            </Typography>
+          </CardContent>
+        </Card>
       ) : (
         <Card
+          elevation={2}
           sx={{
             borderRadius: 3,
-            boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-            border: "1px solid rgba(0,0,0,0.05)",
             overflow: "hidden",
+            border: "1px solid",
+            borderColor: "divider",
           }}
         >
           <TableContainer>
             <Table>
               <TableHead>
-                <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
-                  <TableCell
-                    sx={{ fontWeight: 600, color: theme.palette.text.primary }}
-                  >
+                <TableRow sx={{ backgroundColor: alpha("#667eea", 0.05) }}>
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
                     Date
                   </TableCell>
-                  <TableCell
-                    sx={{ fontWeight: 600, color: theme.palette.text.primary }}
-                  >
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
                     Supplier
                   </TableCell>
-                  <TableCell
-                    sx={{ fontWeight: 600, color: theme.palette.text.primary }}
-                  >
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
                     Type
                   </TableCell>
-                  <TableCell
-                    sx={{ fontWeight: 600, color: theme.palette.text.primary }}
-                  >
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
                     Qty (Kg)
                   </TableCell>
-                  <TableCell
-                    sx={{ fontWeight: 600, color: theme.palette.text.primary }}
-                  >
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
                     ₹/Kg
                   </TableCell>
-                  <TableCell
-                    sx={{ fontWeight: 600, color: theme.palette.text.primary }}
-                  >
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
                     Total Amount
                   </TableCell>
-                  <TableCell
-                    sx={{ fontWeight: 600, color: theme.palette.text.primary }}
-                  >
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
                     Payment Type
                   </TableCell>
-                  <TableCell
-                    sx={{ fontWeight: 600, color: theme.palette.text.primary }}
-                  >
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
                     Storage
                   </TableCell>
-                  <TableCell
-                    sx={{ fontWeight: 600, color: theme.palette.text.primary }}
-                  >
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
                     Notes
                   </TableCell>
                   <TableCell
                     align="center"
-                    sx={{ fontWeight: 600, color: theme.palette.text.primary }}
+                    sx={{ fontWeight: 600, fontSize: "0.875rem" }}
                   >
                     Actions
                   </TableCell>
@@ -478,12 +472,12 @@ const Purchases = () => {
                       key={`${purchase._id}-${idx}`}
                       sx={{
                         "&:hover": {
-                          backgroundColor: theme.palette.action.hover,
-                          "& .action-buttons": {
-                            opacity: 1,
-                          },
+                          backgroundColor: alpha("#667eea", 0.02),
+                          transition: "background-color 0.2s ease",
                         },
-                        transition: "all 0.2s ease",
+                        "&:nth-of-type(even)": {
+                          backgroundColor: alpha("#f8fafc", 0.5),
+                        },
                       }}
                     >
                       <TableCell>
@@ -492,18 +486,33 @@ const Purchases = () => {
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {purchase.supplierId?.name || "-"}
-                        </Typography>
+                        <Box display="flex" alignItems="center">
+                          <Avatar
+                            sx={{
+                              width: 24,
+                              height: 24,
+                              mr: 1,
+                              backgroundColor: alpha("#667eea", 0.1),
+                              color: "#667eea",
+                              fontSize: "0.75rem",
+                            }}
+                          >
+                            {purchase.supplierId?.name?.charAt(0) || "S"}
+                          </Avatar>
+                          <Typography variant="body2">
+                            {purchase.supplierId?.name || "-"}
+                          </Typography>
+                        </Box>
                       </TableCell>
                       <TableCell>
                         <Chip
                           label={item.type}
                           size="small"
                           sx={{
-                            fontWeight: 600,
-                            backgroundColor: theme.palette.primary.light,
-                            color: theme.palette.primary.main,
+                            backgroundColor: alpha("#667eea", 0.1),
+                            color: "#667eea",
+                            fontWeight: 500,
+                            borderRadius: 1,
                           }}
                         />
                       </TableCell>
@@ -517,7 +526,7 @@ const Purchases = () => {
                           variant="body2"
                           sx={{
                             fontWeight: 600,
-                            color: theme.palette.success.main,
+                            color: "#4caf50",
                           }}
                         >
                           ₹{item.pricePerKg}
@@ -528,7 +537,7 @@ const Purchases = () => {
                           variant="body2"
                           sx={{
                             fontWeight: 700,
-                            color: theme.palette.primary.main,
+                            color: "#667eea",
                           }}
                         >
                           ₹{item.totalAmount || purchase.totalAmount}
@@ -539,7 +548,16 @@ const Purchases = () => {
                           label={purchase.paymentType}
                           size="small"
                           color={getPaymentTypeColor(purchase.paymentType)}
-                          sx={{ fontWeight: 600 }}
+                          icon={
+                            <span>
+                              {getPaymentTypeIcon(purchase.paymentType)}
+                            </span>
+                          }
+                          sx={{
+                            fontWeight: 600,
+                            borderRadius: 1,
+                            textTransform: "capitalize",
+                          }}
                         />
                       </TableCell>
                       <TableCell>
@@ -553,7 +571,11 @@ const Purchases = () => {
                                 label={alloc.storageId?.name || alloc.storageId}
                                 size="small"
                                 variant="outlined"
-                                sx={{ fontSize: "0.7rem" }}
+                                sx={{
+                                  fontSize: "0.7rem",
+                                  borderColor: alpha("#667eea", 0.3),
+                                  color: "#667eea",
+                                }}
                               />
                             ) : null
                           )}
@@ -563,7 +585,7 @@ const Purchases = () => {
                         <Typography
                           variant="body2"
                           sx={{
-                            color: theme.palette.text.secondary,
+                            color: "text.secondary",
                             maxWidth: 150,
                             overflow: "hidden",
                             textOverflow: "ellipsis",
@@ -574,26 +596,21 @@ const Purchases = () => {
                         </Typography>
                       </TableCell>
                       <TableCell align="center">
-                        <Box
-                          className="action-buttons"
-                          sx={{
-                            display: "flex",
-                            gap: 1,
-                            justifyContent: "center",
-                            opacity: 0.7,
-                            transition: "opacity 0.2s ease",
-                          }}
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          justifyContent="center"
                         >
                           <Tooltip title="Edit Purchase">
                             <IconButton
                               onClick={() => handleEdit(purchase)}
-                              size="small"
                               sx={{
-                                backgroundColor: theme.palette.primary.light,
-                                color: theme.palette.primary.main,
+                                backgroundColor: alpha("#667eea", 0.1),
+                                color: "#667eea",
                                 "&:hover": {
-                                  backgroundColor: theme.palette.primary.main,
-                                  color: "white",
+                                  backgroundColor: alpha("#667eea", 0.2),
+                                  transform: "scale(1.1)",
+                                  transition: "all 0.2s ease",
                                 },
                               }}
                             >
@@ -603,23 +620,39 @@ const Purchases = () => {
                           <Tooltip title="Delete Purchase">
                             <IconButton
                               onClick={() => handleDelete(purchase._id)}
-                              size="small"
                               sx={{
-                                backgroundColor: theme.palette.error.light,
-                                color: theme.palette.error.main,
+                                backgroundColor: alpha("#f44336", 0.1),
+                                color: "#f44336",
                                 "&:hover": {
-                                  backgroundColor: theme.palette.error.main,
-                                  color: "white",
+                                  backgroundColor: alpha("#f44336", 0.2),
+                                  transform: "scale(1.1)",
+                                  transition: "all 0.2s ease",
                                 },
                               }}
                             >
                               <DeleteIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                        </Box>
+                        </Stack>
                       </TableCell>
                     </TableRow>
                   ))
+                )}
+                {(!purchases || purchases.length === 0) && (
+                  <TableRow>
+                    <TableCell colSpan={10} sx={{ textAlign: "center", py: 6 }}>
+                      <Typography
+                        variant="h6"
+                        color="text.secondary"
+                        sx={{ mb: 1 }}
+                      >
+                        No purchases found
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Create your first purchase to get started
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
                 )}
               </TableBody>
             </Table>

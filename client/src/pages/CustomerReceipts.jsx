@@ -15,9 +15,18 @@ import {
   Dialog,
   DialogTitle,
   DialogActions,
+  Card,
+  CardContent,
+  Grid,
+  Chip,
+  Stack,
+  Avatar,
+  alpha,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
+import ReceiptIcon from "@mui/icons-material/Receipt";
 import { useState } from "react";
 import ReceiptFormModal from "../components/customerReceipts/ReceiptFormModal";
 import {
@@ -26,12 +35,14 @@ import {
   useUpdateReceiptMutation,
   useDeleteReceiptMutation,
 } from "../services/customerReceiptApi";
+import { useSnackbar } from "../components/common/SnackbarProvider";
 
 const CustomerReceipts = () => {
   const { data: receipts, isLoading } = useGetReceiptsQuery();
   const [createReceipt] = useCreateReceiptMutation();
   const [updateReceipt] = useUpdateReceiptMutation();
   const [deleteReceipt] = useDeleteReceiptMutation();
+  const showSnackbar = useSnackbar();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editData, setEditData] = useState(null);
@@ -48,26 +59,243 @@ const CustomerReceipts = () => {
   };
 
   const handleSubmit = async (data) => {
-    if (editData) {
-      await updateReceipt({ id: editData._id, ...data });
-    } else {
-      await createReceipt(data);
+    try {
+      if (editData) {
+        await updateReceipt({ id: editData._id, ...data }).unwrap();
+        showSnackbar("Receipt updated successfully", "success");
+      } else {
+        await createReceipt(data).unwrap();
+        showSnackbar("Receipt created successfully", "success");
+      }
+      closeModal();
+    } catch (error) {
+      showSnackbar("Error saving receipt", "error");
     }
   };
 
   const confirmDelete = async () => {
-    await deleteReceipt(deleteDialog.id);
-    setDeleteDialog({ open: false, id: null });
+    try {
+      await deleteReceipt(deleteDialog.id).unwrap();
+      showSnackbar("Receipt deleted successfully", "success");
+      setDeleteDialog({ open: false, id: null });
+    } catch (error) {
+      showSnackbar("Failed to delete receipt", "error");
+    }
   };
 
-  const getCustomerName = (receipt) => receipt.customer?.name || receipt.customer;
+  const getCustomerName = (receipt) =>
+    receipt.customer?.name || receipt.customer;
+
+  // Calculate summary statistics
+  const totalReceipts = receipts?.length || 0;
+  const totalAmount =
+    receipts?.reduce((sum, receipt) => sum + (receipt.totalAmount || 0), 0) ||
+    0;
+
+  const getPaymentModeColor = (mode) => {
+    switch (mode?.toLowerCase()) {
+      case "cash":
+        return "success";
+      case "bank transfer":
+        return "info";
+      case "cheque":
+        return "warning";
+      default:
+        return "default";
+    }
+  };
+
+  const getPaymentModeIcon = (mode) => {
+    switch (mode?.toLowerCase()) {
+      case "cash":
+        return "💵";
+      case "bank transfer":
+        return "🏦";
+      case "cheque":
+        return "📄";
+      default:
+        return "💰";
+    }
+  };
 
   return (
-    <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h5">Customer Receipts</Typography>
-        <Button variant="contained" onClick={() => openModal()}>Add Receipt</Button>
-      </Box>
+    <Box sx={{ p: 3, backgroundColor: "#f8fafc", minHeight: "100vh" }}>
+      {/* Header Section */}
+      <Card
+        elevation={0}
+        sx={{
+          mb: 3,
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          color: "white",
+          borderRadius: 3,
+        }}
+      >
+        <CardContent sx={{ p: 4 }}>
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            flexWrap="wrap"
+            gap={2}
+          >
+            <Box>
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 700,
+                  mb: 1,
+                  textShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                }}
+              >
+                Customer Receipts
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{
+                  opacity: 0.9,
+                  fontWeight: 300,
+                }}
+              >
+                Manage and track customer payment receipts
+              </Typography>
+            </Box>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => openModal()}
+              sx={{
+                backgroundColor: "rgba(255,255,255,0.2)",
+                color: "white",
+                border: "1px solid rgba(255,255,255,0.3)",
+                px: 3,
+                py: 1.5,
+                borderRadius: 2,
+                fontWeight: 600,
+                "&:hover": {
+                  backgroundColor: "rgba(255,255,255,0.3)",
+                  transform: "translateY(-2px)",
+                  transition: "all 0.2s ease-in-out",
+                },
+              }}
+            >
+              Add Receipt
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Statistics Cards */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <Card
+            sx={{
+              borderRadius: 3,
+              boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+              border: "1px solid rgba(0,0,0,0.05)",
+              "&:hover": {
+                boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
+                transform: "translateY(-2px)",
+              },
+              transition: "all 0.3s ease",
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Box>
+                  <Typography
+                    variant="h4"
+                    sx={{ fontWeight: 700, color: "#667eea" }}
+                  >
+                    {totalReceipts}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "text.secondary",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Total Receipts
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    backgroundColor: alpha("#667eea", 0.1),
+                    borderRadius: "50%",
+                    p: 1.5,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <ReceiptIcon sx={{ color: "#667eea", fontSize: 24 }} />
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <Card
+            sx={{
+              borderRadius: 3,
+              boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+              border: "1px solid rgba(0,0,0,0.05)",
+              "&:hover": {
+                boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
+                transform: "translateY(-2px)",
+              },
+              transition: "all 0.3s ease",
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Box>
+                  <Typography
+                    variant="h4"
+                    sx={{ fontWeight: 700, color: "#4caf50" }}
+                  >
+                    ₹{totalAmount.toLocaleString()}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "text.secondary",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Total Amount
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    backgroundColor: alpha("#4caf50", 0.1),
+                    borderRadius: "50%",
+                    p: 1.5,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <ReceiptIcon sx={{ color: "#4caf50", fontSize: 24 }} />
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
       <ReceiptFormModal
         open={modalOpen}
@@ -79,58 +307,215 @@ const CustomerReceipts = () => {
       <Dialog
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, id: null })}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            minWidth: 400,
+          },
+        }}
       >
-        <DialogTitle>Delete this receipt?</DialogTitle>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialog({ open: false, id: null })}>Cancel</Button>
-          <Button color="error" onClick={confirmDelete}>Delete</Button>
+        <DialogTitle sx={{ pb: 1 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            Delete Receipt
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Are you sure you want to delete this receipt? This action cannot be
+            undone.
+          </Typography>
+        </DialogTitle>
+        <DialogActions sx={{ p: 3, pt: 1 }}>
+          <Button
+            onClick={() => setDeleteDialog({ open: false, id: null })}
+            sx={{ borderRadius: 2 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            color="error"
+            onClick={confirmDelete}
+            variant="contained"
+            sx={{ borderRadius: 2 }}
+          >
+            Delete
+          </Button>
         </DialogActions>
       </Dialog>
 
+      {/* Table Section */}
       {isLoading ? (
-        <CircularProgress />
+        <Card elevation={2} sx={{ borderRadius: 3 }}>
+          <CardContent sx={{ p: 6, textAlign: "center" }}>
+            <CircularProgress size={60} />
+            <Typography variant="h6" sx={{ mt: 2, color: "text.secondary" }}>
+              Loading receipts...
+            </Typography>
+          </CardContent>
+        </Card>
       ) : (
-        <TableContainer component={Paper}>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Date</TableCell>
-                <TableCell>Customer</TableCell>
-                <TableCell>Total Amount</TableCell>
-                <TableCell>Mode</TableCell>
-                <TableCell>Reference</TableCell>
-                <TableCell align="center">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {receipts?.map((r) => (
-                <TableRow key={r._id}>
-                  <TableCell>{new Date(r.paymentDate).toLocaleDateString()}</TableCell>
-                  <TableCell>{getCustomerName(r)}</TableCell>
-                  <TableCell>{r.totalAmount}</TableCell>
-                  <TableCell>{r.paymentMode}</TableCell>
-                  <TableCell>{r.referenceNo}</TableCell>
-                  <TableCell align="center">
-                    <Tooltip title="Edit">
-                      <IconButton size="small" onClick={() => openModal(r)}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => setDeleteDialog({ open: true, id: r._id })}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
+        <Card
+          elevation={2}
+          sx={{
+            borderRadius: 3,
+            overflow: "hidden",
+            border: "1px solid",
+            borderColor: "divider",
+          }}
+        >
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ backgroundColor: alpha("#667eea", 0.05) }}>
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
+                    Date
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
+                    Customer
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
+                    Total Amount
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
+                    Mode
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
+                    Reference
+                  </TableCell>
+                  <TableCell
+                    align="center"
+                    sx={{ fontWeight: 600, fontSize: "0.875rem" }}
+                  >
+                    Actions
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {receipts?.map((r) => (
+                  <TableRow
+                    key={r._id}
+                    sx={{
+                      "&:hover": {
+                        backgroundColor: alpha("#667eea", 0.02),
+                        transition: "background-color 0.2s ease",
+                      },
+                      "&:nth-of-type(even)": {
+                        backgroundColor: alpha("#f8fafc", 0.5),
+                      },
+                    }}
+                  >
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {new Date(r.paymentDate).toLocaleDateString()}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box display="flex" alignItems="center">
+                        <Avatar
+                          sx={{
+                            width: 24,
+                            height: 24,
+                            mr: 1,
+                            backgroundColor: alpha("#667eea", 0.1),
+                            color: "#667eea",
+                            fontSize: "0.75rem",
+                          }}
+                        >
+                          {getCustomerName(r)?.charAt(0) || "C"}
+                        </Avatar>
+                        <Typography variant="body2">
+                          {getCustomerName(r)}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 600, color: "#4caf50" }}
+                      >
+                        ₹{r.totalAmount}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={r.paymentMode}
+                        size="small"
+                        color={getPaymentModeColor(r.paymentMode)}
+                        icon={<span>{getPaymentModeIcon(r.paymentMode)}</span>}
+                        sx={{
+                          fontWeight: 600,
+                          borderRadius: 1,
+                          textTransform: "capitalize",
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {r.referenceNo || "-"}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        justifyContent="center"
+                      >
+                        <Tooltip title="Edit Receipt">
+                          <IconButton
+                            onClick={() => openModal(r)}
+                            sx={{
+                              backgroundColor: alpha("#667eea", 0.1),
+                              color: "#667eea",
+                              "&:hover": {
+                                backgroundColor: alpha("#667eea", 0.2),
+                                transform: "scale(1.1)",
+                                transition: "all 0.2s ease",
+                              },
+                            }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete Receipt">
+                          <IconButton
+                            onClick={() =>
+                              setDeleteDialog({ open: true, id: r._id })
+                            }
+                            sx={{
+                              backgroundColor: alpha("#f44336", 0.1),
+                              color: "#f44336",
+                              "&:hover": {
+                                backgroundColor: alpha("#f44336", 0.2),
+                                transform: "scale(1.1)",
+                                transition: "all 0.2s ease",
+                              },
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {(!receipts || receipts.length === 0) && (
+                  <TableRow>
+                    <TableCell colSpan={6} sx={{ textAlign: "center", py: 6 }}>
+                      <Typography
+                        variant="h6"
+                        color="text.secondary"
+                        sx={{ mb: 1 }}
+                      >
+                        No receipts found
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Create your first receipt to get started
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Card>
       )}
     </Box>
   );

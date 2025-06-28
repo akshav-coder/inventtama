@@ -28,15 +28,27 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
+  Avatar,
+  Chip,
+  Tooltip,
+  Fade,
+  Skeleton,
+  Badge,
+  alpha,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import ListAltIcon from "@mui/icons-material/ListAlt";
 import CloseIcon from "@mui/icons-material/Close";
+import StorageIcon from "@mui/icons-material/Storage";
+import AcUnitIcon from "@mui/icons-material/AcUnit";
+import BusinessIcon from "@mui/icons-material/Business";
+import InventoryIcon from "@mui/icons-material/Inventory";
 import {
   useCreateStorageMutation,
   useGetStoragesQuery,
 } from "../services/storageApi";
 import { useCreateLotMutation, useGetLotsQuery } from "../services/lotapi";
+import { useSnackbar } from "../components/common/SnackbarProvider";
 
 const StorageAndLotPage = () => {
   const [type, setType] = useState("cold");
@@ -51,18 +63,24 @@ const StorageAndLotPage = () => {
     coldStorageId: "",
   });
 
-  const { data: storages = [] } = useGetStoragesQuery(type);
+  const { data: storages = [], isLoading } = useGetStoragesQuery(type);
   const [createStorage] = useCreateStorageMutation();
   const [createLot] = useCreateLotMutation();
   const { data: lots = [] } = useGetLotsQuery(selectedStorage?._id, {
     skip: !selectedStorage,
   });
+  const showSnackbar = useSnackbar();
 
   const handleAddStorage = async () => {
     if (newStorage.name && newStorage.type) {
-      await createStorage(newStorage);
-      setNewStorage({ name: "", type: "cold" });
-      setAddStorageOpen(false);
+      try {
+        await createStorage(newStorage).unwrap();
+        showSnackbar("Storage created successfully", "success");
+        setNewStorage({ name: "", type: "cold" });
+        setAddStorageOpen(false);
+      } catch (error) {
+        showSnackbar("Error creating storage", "error");
+      }
     }
   };
 
@@ -84,122 +102,534 @@ const StorageAndLotPage = () => {
       newLot.quantity &&
       selectedStorage
     ) {
-      await createLot({ ...newLot, coldStorageId: selectedStorage._id });
-      setNewLot({
-        lotNumber: "",
-        tamarindType: "",
-        quantity: "",
-        coldStorageId: selectedStorage._id,
-      });
+      try {
+        await createLot({
+          ...newLot,
+          coldStorageId: selectedStorage._id,
+        }).unwrap();
+        showSnackbar("Lot created successfully", "success");
+        setNewLot({
+          lotNumber: "",
+          tamarindType: "",
+          quantity: "",
+          coldStorageId: selectedStorage._id,
+        });
+      } catch (error) {
+        showSnackbar("Error creating lot", "error");
+      }
     }
   };
 
+  const getStorageIcon = (storageType) => {
+    return storageType === "cold" ? <AcUnitIcon /> : <BusinessIcon />;
+  };
+
+  const getStorageColor = (storageType) => {
+    return storageType === "cold" ? "primary" : "secondary";
+  };
+
+  const getTotalQuantity = (storage) => {
+    if (storage.type === "unit") return storage.quantity || 0;
+    return lots.reduce((sum, lot) => sum + (lot.quantity || 0), 0);
+  };
+
+  // Calculate summary statistics
+  const totalStorages = storages?.length || 0;
+  const totalQuantity =
+    storages?.reduce((sum, storage) => sum + getTotalQuantity(storage), 0) || 0;
+  const coldStorages = storages?.filter((s) => s.type === "cold").length || 0;
+  const unitStorages = storages?.filter((s) => s.type === "unit").length || 0;
+
   return (
-    <Box sx={{ p: { xs: 1, sm: 3 }, maxWidth: 1100, mx: "auto" }}>
-      <Typography variant="h4" fontWeight={700} gutterBottom align="center">
-        Storage & Lot Management
-      </Typography>
-      <Divider sx={{ mb: 3 }} />
+    <Box sx={{ p: 3, backgroundColor: "#f8fafc", minHeight: "100vh" }}>
+      {/* Header Section */}
+      <Card
+        elevation={0}
+        sx={{
+          mb: 3,
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          color: "white",
+          borderRadius: 3,
+        }}
+      >
+        <CardContent sx={{ p: 4 }}>
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            flexWrap="wrap"
+            gap={2}
+          >
+            <Box>
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 700,
+                  mb: 1,
+                  textShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                }}
+              >
+                Storage & Lot Management
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{
+                  opacity: 0.9,
+                  fontWeight: 300,
+                }}
+              >
+                Manage cold storages, units, and tamarind lots
+              </Typography>
+            </Box>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setAddStorageOpen(true)}
+              sx={{
+                backgroundColor: "rgba(255,255,255,0.2)",
+                color: "white",
+                border: "1px solid rgba(255,255,255,0.3)",
+                px: 3,
+                py: 1.5,
+                borderRadius: 2,
+                fontWeight: 600,
+                "&:hover": {
+                  backgroundColor: "rgba(255,255,255,0.3)",
+                  transform: "translateY(-2px)",
+                  transition: "all 0.2s ease-in-out",
+                },
+              }}
+            >
+              Add Storage
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Statistics Cards */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Card
+            sx={{
+              borderRadius: 3,
+              boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+              border: "1px solid rgba(0,0,0,0.05)",
+              "&:hover": {
+                boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
+                transform: "translateY(-2px)",
+              },
+              transition: "all 0.3s ease",
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Box>
+                  <Typography
+                    variant="h4"
+                    sx={{ fontWeight: 700, color: "#667eea" }}
+                  >
+                    {totalStorages}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "text.secondary",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Total Storages
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    backgroundColor: alpha("#667eea", 0.1),
+                    borderRadius: "50%",
+                    p: 1.5,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <StorageIcon sx={{ color: "#667eea", fontSize: 24 }} />
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Card
+            sx={{
+              borderRadius: 3,
+              boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+              border: "1px solid rgba(0,0,0,0.05)",
+              "&:hover": {
+                boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
+                transform: "translateY(-2px)",
+              },
+              transition: "all 0.3s ease",
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Box>
+                  <Typography
+                    variant="h4"
+                    sx={{ fontWeight: 700, color: "#4caf50" }}
+                  >
+                    {totalQuantity.toFixed(1)} kg
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "text.secondary",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Total Quantity
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    backgroundColor: alpha("#4caf50", 0.1),
+                    borderRadius: "50%",
+                    p: 1.5,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <InventoryIcon sx={{ color: "#4caf50", fontSize: 24 }} />
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Card
+            sx={{
+              borderRadius: 3,
+              boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+              border: "1px solid rgba(0,0,0,0.05)",
+              "&:hover": {
+                boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
+                transform: "translateY(-2px)",
+              },
+              transition: "all 0.3s ease",
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Box>
+                  <Typography
+                    variant="h4"
+                    sx={{ fontWeight: 700, color: "#2196f3" }}
+                  >
+                    {coldStorages}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "text.secondary",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Cold Storages
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    backgroundColor: alpha("#2196f3", 0.1),
+                    borderRadius: "50%",
+                    p: 1.5,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <AcUnitIcon sx={{ color: "#2196f3", fontSize: 24 }} />
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Card
+            sx={{
+              borderRadius: 3,
+              boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+              border: "1px solid rgba(0,0,0,0.05)",
+              "&:hover": {
+                boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
+                transform: "translateY(-2px)",
+              },
+              transition: "all 0.3s ease",
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Box>
+                  <Typography
+                    variant="h4"
+                    sx={{ fontWeight: 700, color: "#ff9800" }}
+                  >
+                    {unitStorages}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "text.secondary",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Unit Storages
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    backgroundColor: alpha("#ff9800", 0.1),
+                    borderRadius: "50%",
+                    p: 1.5,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <BusinessIcon sx={{ color: "#ff9800", fontSize: 24 }} />
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
       {/* Storage Type Selector */}
-      <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-        <Typography variant="subtitle1" sx={{ mr: 2 }}>
-          Storage Type:
-        </Typography>
-        <RadioGroup
-          row
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-          name="storage-type-main-radio"
+      <Card
+        elevation={2}
+        sx={{
+          mb: 3,
+          borderRadius: 3,
+          border: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        <CardContent sx={{ p: 3 }}>
+          <Box display="flex" alignItems="center" gap={2} mb={3}>
+            <StorageIcon sx={{ color: "primary.main" }} />
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Storage Type
+            </Typography>
+          </Box>
+          <RadioGroup
+            row
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+            name="storage-type-main-radio"
+          >
+            <FormControlLabel
+              value="cold"
+              control={<Radio color="primary" />}
+              label={
+                <Box display="flex" alignItems="center" gap={1}>
+                  <AcUnitIcon fontSize="small" color="primary" />
+                  <Typography>Cold Storage</Typography>
+                </Box>
+              }
+            />
+            <FormControlLabel
+              value="unit"
+              control={<Radio color="secondary" />}
+              label={
+                <Box display="flex" alignItems="center" gap={1}>
+                  <BusinessIcon fontSize="small" color="secondary" />
+                  <Typography>Unit</Typography>
+                </Box>
+              }
+            />
+          </RadioGroup>
+        </CardContent>
+      </Card>
+
+      {/* Storages Grid */}
+      {isLoading ? (
+        <Grid container spacing={3}>
+          {[1, 2, 3, 4].map((i) => (
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i}>
+              <Card
+                elevation={2}
+                sx={{
+                  borderRadius: 3,
+                  border: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
+                <CardContent>
+                  <Skeleton variant="rectangular" height={120} />
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      ) : storages.length === 0 ? (
+        <Card
+          elevation={2}
+          sx={{
+            borderRadius: 3,
+            border: "1px solid",
+            borderColor: "divider",
+          }}
         >
-          <FormControlLabel
-            value="cold"
-            control={<Radio />}
-            label="Cold Storage"
-          />
-          <FormControlLabel value="unit" control={<Radio />} label="Unit" />
-        </RadioGroup>
-      </Box>
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setAddStorageOpen(true)}
-        >
-          Add Storage
-        </Button>
-      </Box>
-      <Card sx={{ boxShadow: 3 }}>
-        <CardHeader title="Storages" sx={{ bgcolor: "#f5f5f5", pb: 0 }} />
-        <CardContent>
-          {storages.length === 0 ? (
-            <Alert severity="info">
-              No storages found. Please add a storage first.
+          <CardContent sx={{ p: 6, textAlign: "center" }}>
+            <Alert severity="info" sx={{ fontSize: "1.1rem" }}>
+              No {type === "cold" ? "cold storages" : "units"} found. Please add
+              a storage first.
             </Alert>
-          ) : (
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Type</TableCell>
-                    <TableCell align="center">Lots</TableCell>
-                    <TableCell align="center">Quantity</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {storages.map((storage) => (
-                    <TableRow key={storage._id}>
-                      <TableCell>{storage.name}</TableCell>
-                      <TableCell sx={{ textTransform: "capitalize" }}>
-                        {storage.type}
-                      </TableCell>
-                      <TableCell align="center">
-                        {storage.type === "cold" ? (
+          </CardContent>
+        </Card>
+      ) : (
+        <Grid container spacing={3}>
+          {storages.map((storage) => (
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={storage._id}>
+              <Fade in timeout={300}>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    height: "100%",
+                    transition: "all 0.3s ease",
+                    border: "1px solid",
+                    borderColor: "divider",
+                    "&:hover": {
+                      transform: "translateY(-4px)",
+                      boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
+                    },
+                  }}
+                >
+                  <CardContent sx={{ p: 3 }}>
+                    <Box display="flex" alignItems="center" gap={2} mb={2}>
+                      <Avatar
+                        sx={{
+                          bgcolor: `${getStorageColor(storage.type)}.main`,
+                          width: 48,
+                          height: 48,
+                        }}
+                      >
+                        {getStorageIcon(storage.type)}
+                      </Avatar>
+                      <Box flex={1}>
+                        <Typography variant="h6" fontWeight={600} noWrap>
+                          {storage.name}
+                        </Typography>
+                        <Chip
+                          label={
+                            storage.type === "cold" ? "Cold Storage" : "Unit"
+                          }
+                          color={getStorageColor(storage.type)}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </Box>
+                    </Box>
+
+                    <Box display="flex" alignItems="center" gap={1} mb={3}>
+                      <InventoryIcon fontSize="small" color="action" />
+                      <Typography variant="body1" fontWeight={500}>
+                        Quantity: {getTotalQuantity(storage)} kg
+                      </Typography>
+                    </Box>
+
+                    <Divider sx={{ mb: 2 }} />
+
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Chip
+                        label="Active"
+                        color="success"
+                        size="small"
+                        variant="outlined"
+                      />
+                      {storage.type === "cold" && (
+                        <Tooltip title="View/Add Lots">
                           <Button
                             variant="outlined"
                             startIcon={<ListAltIcon />}
                             onClick={() => handleOpenLotDialog(storage)}
+                            size="small"
+                            color="primary"
+                            sx={{ borderRadius: 2 }}
                           >
-                            View/Add Lots
+                            Manage Lots
                           </Button>
-                        ) : (
-                          <Typography variant="body2" color="text.secondary">
-                            N/A
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell align="center">
-                        {storage.type === "unit" ? storage.quantity || 0 : "-"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </CardContent>
-      </Card>
+                        </Tooltip>
+                      )}
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Fade>
+            </Grid>
+          ))}
+        </Grid>
+      )}
 
       {/* Add Storage Dialog */}
       <Dialog
         open={addStorageOpen}
         onClose={() => setAddStorageOpen(false)}
-        maxWidth="xs"
+        maxWidth="sm"
         fullWidth
+        PaperProps={{
+          sx: { borderRadius: 3 },
+        }}
       >
-        <DialogTitle>
-          Add New Storage
-          <IconButton
-            aria-label="close"
-            onClick={() => setAddStorageOpen(false)}
-            sx={{ position: "absolute", right: 8, top: 8 }}
+        <DialogTitle sx={{ pb: 1 }}>
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
           >
-            <CloseIcon />
-          </IconButton>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Add New Storage
+            </Typography>
+            <IconButton
+              aria-label="close"
+              onClick={() => setAddStorageOpen(false)}
+              size="small"
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
         </DialogTitle>
         <DialogContent dividers>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
+          <Grid container spacing={3} sx={{ pt: 1 }}>
+            <Grid size={12}>
               <TextField
                 fullWidth
                 label="Storage Name"
@@ -209,9 +639,19 @@ const StorageAndLotPage = () => {
                   setNewStorage({ ...newStorage, name: e.target.value })
                 }
                 helperText="Enter a unique storage name"
+                InputProps={{
+                  startAdornment: (
+                    <StorageIcon sx={{ mr: 1, color: "action.active" }} />
+                  ),
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                  },
+                }}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 select
                 fullWidth
@@ -221,13 +661,28 @@ const StorageAndLotPage = () => {
                   setNewStorage({ ...newStorage, type: e.target.value })
                 }
                 helperText="Choose storage type"
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                  },
+                }}
               >
-                <MenuItem value="cold">Cold Storage</MenuItem>
-                <MenuItem value="unit">Unit</MenuItem>
+                <MenuItem value="cold">
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <AcUnitIcon fontSize="small" color="primary" />
+                    Cold Storage
+                  </Box>
+                </MenuItem>
+                <MenuItem value="unit">
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <BusinessIcon fontSize="small" color="secondary" />
+                    Unit
+                  </Box>
+                </MenuItem>
               </TextField>
             </Grid>
             {newStorage.type === "unit" && (
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <TextField
                   fullWidth
                   label="Quantity (kg)"
@@ -241,19 +696,34 @@ const StorageAndLotPage = () => {
                   }
                   helperText="Enter quantity for this unit storage"
                   inputProps={{ min: 0 }}
+                  InputProps={{
+                    startAdornment: (
+                      <InventoryIcon sx={{ mr: 1, color: "action.active" }} />
+                    ),
+                  }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                    },
+                  }}
                 />
               </Grid>
             )}
           </Grid>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAddStorageOpen(false)} color="secondary">
+        <DialogActions sx={{ p: 3, pt: 2 }}>
+          <Button
+            onClick={() => setAddStorageOpen(false)}
+            color="inherit"
+            sx={{ borderRadius: 2 }}
+          >
             Cancel
           </Button>
           <Button
             onClick={handleAddStorage}
             variant="contained"
             color="primary"
+            sx={{ px: 3, borderRadius: 2 }}
           >
             Add Storage
           </Button>
@@ -266,100 +736,203 @@ const StorageAndLotPage = () => {
         onClose={() => setLotDialogOpen(false)}
         maxWidth="md"
         fullWidth
+        PaperProps={{
+          sx: { borderRadius: 3 },
+        }}
       >
-        <DialogTitle>
-          Lots in {selectedStorage?.name}
-          <IconButton
-            aria-label="close"
-            onClick={() => setLotDialogOpen(false)}
-            sx={{ position: "absolute", right: 8, top: 8 }}
+        <DialogTitle sx={{ pb: 1 }}>
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
           >
-            <CloseIcon />
-          </IconButton>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Lots in {selectedStorage?.name}
+            </Typography>
+            <IconButton
+              aria-label="close"
+              onClick={() => setLotDialogOpen(false)}
+              size="small"
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
         </DialogTitle>
         <DialogContent dividers>
-          <Typography variant="subtitle1" sx={{ mb: 2 }}>
-            Add New Lot
-          </Typography>
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                label="Lot Number"
-                placeholder="Eg. LOT-001"
-                value={newLot.lotNumber}
-                onChange={(e) =>
-                  setNewLot({ ...newLot, lotNumber: e.target.value })
-                }
-                helperText="Enter the lot number"
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                label="Tamarind Type"
-                placeholder="Eg. Sweet, Sour"
-                value={newLot.tamarindType}
-                onChange={(e) =>
-                  setNewLot({ ...newLot, tamarindType: e.target.value })
-                }
-                helperText="Type of tamarind in this lot"
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                label="Quantity (kg)"
-                type="number"
-                placeholder="Eg. 1000"
-                value={newLot.quantity}
-                onChange={(e) =>
-                  setNewLot({ ...newLot, quantity: e.target.value })
-                }
-                helperText="Enter quantity in kilograms"
-                inputProps={{ min: 0 }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Button
-                variant="contained"
-                color="success"
-                size="large"
-                onClick={handleAddLot}
-                sx={{ mt: 1, width: { xs: "100%", sm: "auto" } }}
-              >
-                Create Lot
-              </Button>
-            </Grid>
-          </Grid>
-          <Divider sx={{ mb: 2 }} />
-          <Typography variant="subtitle1" sx={{ mb: 1 }}>
-            Lots List
-          </Typography>
-          {lots.length > 0 ? (
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Lot Number</TableCell>
-                    <TableCell>Tamarind Type</TableCell>
-                    <TableCell>Quantity (kg)</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {lots.map((lot) => (
-                    <TableRow key={lot._id}>
-                      <TableCell>{lot.lotNumber}</TableCell>
-                      <TableCell>{lot.tamarindType}</TableCell>
-                      <TableCell>{lot.quantity}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          ) : (
-            <Alert severity="info">No lots found for this storage.</Alert>
-          )}
+          {/* Add New Lot Section */}
+          <Card
+            sx={{
+              mb: 3,
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+            <CardHeader
+              title="Add New Lot"
+              titleTypographyProps={{ variant: "h6", fontWeight: 600 }}
+              sx={{ pb: 1 }}
+            />
+            <CardContent>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <TextField
+                    fullWidth
+                    label="Lot Number"
+                    placeholder="Eg. LOT-001"
+                    value={newLot.lotNumber}
+                    onChange={(e) =>
+                      setNewLot({ ...newLot, lotNumber: e.target.value })
+                    }
+                    helperText="Enter the lot number"
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: 2,
+                      },
+                    }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <TextField
+                    fullWidth
+                    label="Tamarind Type"
+                    placeholder="Eg. Sweet, Sour"
+                    value={newLot.tamarindType}
+                    onChange={(e) =>
+                      setNewLot({ ...newLot, tamarindType: e.target.value })
+                    }
+                    helperText="Type of tamarind in this lot"
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: 2,
+                      },
+                    }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <TextField
+                    fullWidth
+                    label="Quantity (kg)"
+                    type="number"
+                    placeholder="Eg. 1000"
+                    value={newLot.quantity}
+                    onChange={(e) =>
+                      setNewLot({ ...newLot, quantity: e.target.value })
+                    }
+                    helperText="Enter quantity in kilograms"
+                    inputProps={{ min: 0 }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: 2,
+                      },
+                    }}
+                  />
+                </Grid>
+                <Grid size={12}>
+                  <Button
+                    variant="contained"
+                    color="success"
+                    size="large"
+                    onClick={handleAddLot}
+                    startIcon={<AddIcon />}
+                    sx={{
+                      mt: 1,
+                      width: { xs: "100%", sm: "auto" },
+                      borderRadius: 2,
+                    }}
+                  >
+                    Create Lot
+                  </Button>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+
+          {/* Lots List Section */}
+          <Card
+            sx={{
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+            <CardHeader
+              title="Lots List"
+              titleTypographyProps={{ variant: "h6", fontWeight: 600 }}
+              action={
+                <Badge badgeContent={lots.length} color="primary">
+                  <InventoryIcon color="action" />
+                </Badge>
+              }
+              sx={{ pb: 1 }}
+            />
+            <CardContent>
+              {lots.length > 0 ? (
+                <TableContainer
+                  component={Paper}
+                  sx={{ borderRadius: 2, overflow: "hidden" }}
+                >
+                  <Table>
+                    <TableHead>
+                      <TableRow
+                        sx={{ backgroundColor: alpha("#667eea", 0.05) }}
+                      >
+                        <TableCell
+                          sx={{ color: "primary.main", fontWeight: 600 }}
+                        >
+                          Lot Number
+                        </TableCell>
+                        <TableCell
+                          sx={{ color: "primary.main", fontWeight: 600 }}
+                        >
+                          Tamarind Type
+                        </TableCell>
+                        <TableCell
+                          sx={{ color: "primary.main", fontWeight: 600 }}
+                        >
+                          Quantity (kg)
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {lots.map((lot) => (
+                        <TableRow
+                          key={lot._id}
+                          sx={{
+                            "&:nth-of-type(odd)": {
+                              bgcolor: alpha("#f8fafc", 0.5),
+                            },
+                            "&:hover": { bgcolor: alpha("#667eea", 0.02) },
+                            transition: "background-color 0.2s ease",
+                          }}
+                        >
+                          <TableCell>
+                            <Chip
+                              label={lot.lotNumber}
+                              size="small"
+                              color="primary"
+                              variant="outlined"
+                              sx={{ borderRadius: 1 }}
+                            />
+                          </TableCell>
+                          <TableCell>{lot.tamarindType}</TableCell>
+                          <TableCell>
+                            <Typography fontWeight={600} color="success.main">
+                              {lot.quantity} kg
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Alert severity="info">
+                  No lots found for this storage. Add a new lot above.
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
         </DialogContent>
       </Dialog>
     </Box>
