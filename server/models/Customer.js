@@ -34,6 +34,10 @@ const customerSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    outstandingBalance: {
+      type: Number,
+      default: 0,
+    },
     paymentMode: {
       type: String,
       enum: ["cash", "credit"],
