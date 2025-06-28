@@ -11,6 +11,7 @@ import SupplierPage from "../pages/SupplierPage";
 import CustomerPage from "../pages/CustomerPage";
 import StorageAndLotPage from "../pages/StorageAndLotPage";
 import SupplierPayments from "../pages/SupplierPayments";
+import CustomerReceipts from "../pages/CustomerReceipts";
 
 const router = createBrowserRouter([
   {
@@ -46,6 +47,10 @@ const router = createBrowserRouter([
           {
             path: "/supplier-payments",
             element: <SupplierPayments />,
+          },
+          {
+            path: "/customer-receipts",
+            element: <CustomerReceipts />,
           },
           {
             path: "/supplier-management",
