@@ -7,6 +7,7 @@ import {
   Grid,
   TextField,
   IconButton,
+  MenuItem,
 } from "@mui/material";
 import { RemoveCircle } from "@mui/icons-material";
 import { useFormik } from "formik";
@@ -98,9 +99,9 @@ const SalesFormModal = ({ open, onClose, onSubmit, initialValues }) => {
                 helperText={formik.errors.customer}
               >
                 {customers.map((c) => (
-                  <option key={c._id} value={c._id}>
+                  <MenuItem key={c._id} value={c._id}>
                     {c.name}
-                  </option>
+                  </MenuItem>
                 ))}
               </TextField>
             </Grid>
@@ -115,8 +116,8 @@ const SalesFormModal = ({ open, onClose, onSubmit, initialValues }) => {
                 error={Boolean(formik.errors.paymentType)}
                 helperText={formik.errors.paymentType}
               >
-                <option value="cash">Cash</option>
-                <option value="credit">Credit</option>
+                <MenuItem value="cash">Cash</MenuItem>
+                <MenuItem value="credit">Credit</MenuItem>
               </TextField>
             </Grid>
             {formik.values.paymentType === "credit" && (
