@@ -8,7 +8,7 @@ const Storage = require("../models/Storage");
 // GET all transfers with filters
 router.get("/", async (req, res) => {
   try {
-    const { startDate, endDate, fromStorage, toStorage, status, tamarindType } =
+    const { startDate, endDate, fromStorage, toStorage, tamarindType } =
       req.query;
 
     const query = {};
@@ -22,7 +22,6 @@ router.get("/", async (req, res) => {
 
     if (fromStorage) query.fromStorageId = fromStorage;
     if (toStorage) query.toStorageId = toStorage;
-    if (status) query.status = status;
     if (tamarindType) query.tamarindType = tamarindType;
 
     const transfers = await Transfer.find(query)
@@ -105,7 +104,6 @@ router.post("/", async (req, res) => {
       quantity,
       remarks,
       lotId,
-      status: "pending",
     });
 
     await transfer.save();
@@ -116,6 +114,12 @@ router.post("/", async (req, res) => {
       lot.quantity -= quantity;
       if (lot.quantity === 0) lot.isActive = false;
       await lot.save();
+    }
+
+    // Update unit storage quantity if transfer is to a unit storage
+    if (toStorage.type === "unit") {
+      toStorage.quantity = (toStorage.quantity || 0) + quantity;
+      await toStorage.save();
     }
 
     // Populate the response
@@ -143,19 +147,11 @@ router.put("/:id", async (req, res) => {
       quantity,
       remarks,
       lotId,
-      status,
     } = req.body;
 
     const transfer = await Transfer.findById(req.params.id);
     if (!transfer) {
       return res.status(404).json({ error: "Transfer not found" });
-    }
-
-    // Only allow updates if transfer is pending
-    if (transfer.status !== "pending") {
-      return res
-        .status(400)
-        .json({ error: "Cannot update completed or cancelled transfer" });
     }
 
     // Validate storage locations
@@ -179,6 +175,42 @@ router.put("/:id", async (req, res) => {
       }
     }
 
+    // Revert previous changes
+    // Restore lot quantity if it was a cold storage transfer
+    if (transfer.lotId) {
+      const lot = await Lot.findById(transfer.lotId);
+      if (lot) {
+        lot.quantity += transfer.quantity;
+        lot.isActive = true;
+        await lot.save();
+      }
+    }
+
+    // Revert unit storage quantity if transfer was to a unit storage
+    const oldToStorage = await Storage.findById(transfer.toStorageId);
+    if (oldToStorage && oldToStorage.type === "unit") {
+      oldToStorage.quantity = Math.max(
+        0,
+        (oldToStorage.quantity || 0) - transfer.quantity
+      );
+      await oldToStorage.save();
+    }
+
+    // Apply new changes
+    // Update lot quantity if it's a cold storage transfer
+    if (lotId) {
+      const lot = await Lot.findById(lotId);
+      lot.quantity -= quantity;
+      if (lot.quantity === 0) lot.isActive = false;
+      await lot.save();
+    }
+
+    // Update unit storage quantity if transfer is to a unit storage
+    if (toStorage.type === "unit") {
+      toStorage.quantity = (toStorage.quantity || 0) + quantity;
+      await toStorage.save();
+    }
+
     // Update transfer
     const updatedTransfer = await Transfer.findByIdAndUpdate(
       req.params.id,
@@ -190,7 +222,6 @@ router.put("/:id", async (req, res) => {
         quantity,
         remarks,
         lotId,
-        status,
       },
       { new: true }
     )
@@ -214,13 +245,6 @@ router.delete("/:id", async (req, res) => {
       return res.status(404).json({ error: "Transfer not found" });
     }
 
-    // Only allow deletion if transfer is pending
-    if (transfer.status !== "pending") {
-      return res
-        .status(400)
-        .json({ error: "Cannot delete completed or cancelled transfer" });
-    }
-
     // Restore lot quantity if it was a cold storage transfer
     if (transfer.lotId) {
       const lot = await Lot.findById(transfer.lotId);
@@ -229,6 +253,16 @@ router.delete("/:id", async (req, res) => {
         lot.isActive = true;
         await lot.save();
       }
+    }
+
+    // Restore unit storage quantity if transfer was to a unit storage
+    const toStorage = await Storage.findById(transfer.toStorageId);
+    if (toStorage && toStorage.type === "unit") {
+      toStorage.quantity = Math.max(
+        0,
+        (toStorage.quantity || 0) - transfer.quantity
+      );
+      await toStorage.save();
     }
 
     await Transfer.findByIdAndDelete(req.params.id);

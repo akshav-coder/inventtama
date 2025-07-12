@@ -15,8 +15,6 @@ import {
 import { useEffect, useState } from "react";
 import { useGetStoragesQuery } from "../../services/storageApi";
 import { useGetLotsQuery } from "../../services/lotapi";
-import { useFormik } from "formik";
-import * as Yup from "yup";
 import { useCreateTransferMutation } from "../../services/unitTransferApi";
 import { useSnackbar } from "../common/SnackbarProvider";
 
@@ -29,73 +27,160 @@ const TransferFormModal = ({ open, onClose, initialValues }) => {
     skip: !selectedStorage,
   });
 
-  const formik = useFormik({
-    initialValues: initialValues || {
-      transferDate: new Date().toISOString().split("T")[0],
-      fromStorageId: "",
-      toStorageId: "",
-      tamarindType: "",
-      quantity: "",
-      remarks: "",
-      lotId: "",
-    },
-    validationSchema: Yup.object({
-      transferDate: Yup.date().required("Date is required"),
-      fromStorageId: Yup.string().required("From storage is required"),
-      toStorageId: Yup.string()
-        .required("To storage is required")
-        .test(
-          "different-storage",
-          "Cannot transfer to same storage",
-          function (value) {
-            return value !== this.parent.fromStorageId;
-          }
-        ),
-      tamarindType: Yup.string().required("Tamarind type is required"),
-      quantity: Yup.number()
-        .required("Quantity is required")
-        .min(0.01, "Quantity must be greater than 0"),
-      remarks: Yup.string(),
-      lotId: Yup.string().when("fromStorageId", {
-        is: (val) => Boolean(val && val.toLowerCase().includes("cold")),
-        then: () => Yup.string().required("Lot is required for cold storage"),
-        otherwise: () => Yup.string().nullable(),
-      }),
-    }),
-    onSubmit: async (values, { setSubmitting }) => {
-      try {
-        const result = await createTransfer(values).unwrap();
-        showSnackbar("Transfer created successfully", "success");
-        onClose();
-      } catch (error) {
-        showSnackbar(error.data?.error || "Failed to create transfer", "error");
-      } finally {
-        setSubmitting(false);
-      }
-    },
-    enableReinitialize: true,
+  const [formData, setFormData] = useState({
+    transferDate: new Date().toISOString().split("T")[0],
+    fromStorageId: "",
+    toStorageId: "",
+    tamarindType: "",
+    quantity: "",
+    remarks: "",
+    lotId: "",
   });
 
-  useEffect(() => {
-    if (open) {
-      formik.resetForm();
-      if (initialValues) {
-        formik.setValues(initialValues);
-      }
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Get unit storages for "to" storage dropdown
+  const unitStorages = storages.filter((storage) => storage.type === "unit");
+
+  // Get selected lot details for quantity validation
+  const selectedLot = lots.find((lot) => lot._id === formData.lotId);
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.transferDate) {
+      newErrors.transferDate = "Date is required";
     }
-  }, [open, initialValues]);
+
+    if (!formData.fromStorageId) {
+      newErrors.fromStorageId = "From storage is required";
+    }
+
+    if (!formData.toStorageId) {
+      newErrors.toStorageId = "To storage is required";
+    } else if (formData.toStorageId === formData.fromStorageId) {
+      newErrors.toStorageId = "Cannot transfer to same storage";
+    }
+
+    if (!formData.tamarindType) {
+      newErrors.tamarindType = "Tamarind type is required";
+    }
+
+    if (!formData.quantity) {
+      newErrors.quantity = "Quantity is required";
+    } else if (parseFloat(formData.quantity) <= 0) {
+      newErrors.quantity = "Quantity must be greater than 0";
+    } else if (
+      selectedLot &&
+      parseFloat(formData.quantity) > selectedLot.quantity
+    ) {
+      newErrors.quantity = `Quantity cannot exceed available lot quantity (${selectedLot.quantity}kg)`;
+    }
+
+    const fromStorage = storages.find((s) => s._id === formData.fromStorageId);
+    if (fromStorage?.type === "cold" && !formData.lotId) {
+      newErrors.lotId = "Lot is required for cold storage";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
+    }
+
+    // If lot changes, reset toStorageId if from storage is cold
+    if (name === "lotId" && selectedStorage) {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        toStorageId: "", // Reset to storage when lot changes
+      }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const result = await createTransfer(formData).unwrap();
+      showSnackbar("Transfer created successfully", "success");
+      onClose();
+    } catch (error) {
+      showSnackbar(error.data?.error || "Failed to create transfer", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleStorageChange = (e) => {
     const storageId = e.target.value;
     const storage = storages.find((s) => s._id === storageId);
     setSelectedStorage(storage?.type === "cold" ? storageId : null);
-    formik.handleChange(e);
+
+    // Reset form data when from storage changes
+    setFormData((prev) => ({
+      ...prev,
+      fromStorageId: storageId,
+      lotId: "",
+      toStorageId: "",
+    }));
+
+    handleInputChange(e);
   };
+
+  useEffect(() => {
+    if (open) {
+      const defaultValues = {
+        transferDate: new Date().toISOString().split("T")[0],
+        fromStorageId: "",
+        toStorageId: "",
+        tamarindType: "",
+        quantity: "",
+        remarks: "",
+        lotId: "",
+      };
+
+      setFormData(initialValues || defaultValues);
+      setErrors({});
+      setIsSubmitting(false);
+
+      if (initialValues?.fromStorageId) {
+        const storage = storages.find(
+          (s) => s._id === initialValues.fromStorageId
+        );
+        setSelectedStorage(
+          storage?.type === "cold" ? initialValues.fromStorageId : null
+        );
+      }
+    }
+  }, [open, initialValues, storages]);
+
+  // Check if "to" storage should be disabled
+  const isToStorageDisabled = selectedStorage && !formData.lotId;
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>{initialValues ? "Edit" : "Add"} Transfer</DialogTitle>
-      <form onSubmit={formik.handleSubmit}>
+      <form onSubmit={handleSubmit}>
         <DialogContent>
           <Grid container spacing={3}>
             <Grid size={{ xs: 12, md: 6 }}>
@@ -104,30 +189,19 @@ const TransferFormModal = ({ open, onClose, initialValues }) => {
                 type="date"
                 name="transferDate"
                 label="Transfer Date"
-                value={formik.values.transferDate}
-                onChange={formik.handleChange}
-                error={
-                  formik.touched.transferDate &&
-                  Boolean(formik.errors.transferDate)
-                }
-                helperText={
-                  formik.touched.transferDate && formik.errors.transferDate
-                }
+                value={formData.transferDate}
+                onChange={handleInputChange}
+                error={Boolean(errors.transferDate)}
+                helperText={errors.transferDate}
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
-              <FormControl
-                fullWidth
-                error={
-                  formik.touched.fromStorageId &&
-                  Boolean(formik.errors.fromStorageId)
-                }
-              >
+              <FormControl fullWidth error={Boolean(errors.fromStorageId)}>
                 <InputLabel>From Storage</InputLabel>
                 <Select
                   name="fromStorageId"
-                  value={formik.values.fromStorageId}
+                  value={formData.fromStorageId}
                   onChange={handleStorageChange}
                   label="From Storage"
                 >
@@ -137,80 +211,17 @@ const TransferFormModal = ({ open, onClose, initialValues }) => {
                     </MenuItem>
                   ))}
                 </Select>
-                <FormHelperText>{formik.errors.fromStorageId}</FormHelperText>
+                <FormHelperText>{errors.fromStorageId}</FormHelperText>
               </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <FormControl
-                fullWidth
-                error={
-                  formik.touched.toStorageId &&
-                  Boolean(formik.errors.toStorageId)
-                }
-              >
-                <InputLabel>To Storage</InputLabel>
-                <Select
-                  name="toStorageId"
-                  value={formik.values.toStorageId}
-                  onChange={formik.handleChange}
-                  label="To Storage"
-                >
-                  {storages.map((storage) => (
-                    <MenuItem key={storage._id} value={storage._id}>
-                      {storage.name} ({storage.type})
-                    </MenuItem>
-                  ))}
-                </Select>
-                <FormHelperText>{formik.errors.toStorageId}</FormHelperText>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <FormControl
-                fullWidth
-                error={
-                  formik.touched.tamarindType &&
-                  Boolean(formik.errors.tamarindType)
-                }
-              >
-                <InputLabel>Tamarind Type</InputLabel>
-                <Select
-                  name="tamarindType"
-                  value={formik.values.tamarindType}
-                  onChange={formik.handleChange}
-                  label="Tamarind Type"
-                >
-                  <MenuItem value="Whole">Whole</MenuItem>
-                  <MenuItem value="Raw Pod">Raw Pod</MenuItem>
-                  <MenuItem value="Paste">Paste</MenuItem>
-                </Select>
-                <FormHelperText>{formik.errors.tamarindType}</FormHelperText>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
-                type="number"
-                name="quantity"
-                label="Quantity (kg)"
-                value={formik.values.quantity}
-                onChange={formik.handleChange}
-                error={
-                  formik.touched.quantity && Boolean(formik.errors.quantity)
-                }
-                helperText={formik.touched.quantity && formik.errors.quantity}
-              />
             </Grid>
             {selectedStorage && (
               <Grid size={{ xs: 12, md: 6 }}>
-                <FormControl
-                  fullWidth
-                  error={formik.touched.lotId && Boolean(formik.errors.lotId)}
-                >
+                <FormControl fullWidth error={Boolean(errors.lotId)}>
                   <InputLabel>Lot Number</InputLabel>
                   <Select
                     name="lotId"
-                    value={formik.values.lotId}
-                    onChange={formik.handleChange}
+                    value={formData.lotId}
+                    onChange={handleInputChange}
                     label="Lot Number"
                   >
                     {lots.map((lot) => (
@@ -219,10 +230,66 @@ const TransferFormModal = ({ open, onClose, initialValues }) => {
                       </MenuItem>
                     ))}
                   </Select>
-                  <FormHelperText>{formik.errors.lotId}</FormHelperText>
+                  <FormHelperText>{errors.lotId}</FormHelperText>
                 </FormControl>
               </Grid>
             )}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <FormControl fullWidth error={Boolean(errors.toStorageId)}>
+                <InputLabel>To Storage</InputLabel>
+                <Select
+                  name="toStorageId"
+                  value={formData.toStorageId}
+                  onChange={handleInputChange}
+                  label="To Storage"
+                  disabled={isToStorageDisabled}
+                >
+                  {unitStorages.map((storage) => (
+                    <MenuItem key={storage._id} value={storage._id}>
+                      {storage.name} ({storage.type})
+                    </MenuItem>
+                  ))}
+                </Select>
+                <FormHelperText>
+                  {errors.toStorageId ||
+                    (isToStorageDisabled ? "Please select a lot first" : "")}
+                </FormHelperText>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <FormControl fullWidth error={Boolean(errors.tamarindType)}>
+                <InputLabel>Tamarind Type</InputLabel>
+                <Select
+                  name="tamarindType"
+                  value={formData.tamarindType}
+                  onChange={handleInputChange}
+                  label="Tamarind Type"
+                >
+                  <MenuItem value="Whole">Whole</MenuItem>
+                  <MenuItem value="Raw Pod">Raw Pod</MenuItem>
+                  <MenuItem value="Paste">Paste</MenuItem>
+                </Select>
+                <FormHelperText>{errors.tamarindType}</FormHelperText>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <TextField
+                fullWidth
+                type="number"
+                name="quantity"
+                label={`Quantity (kg)${
+                  selectedLot ? ` - Max: ${selectedLot.quantity}kg` : ""
+                }`}
+                value={formData.quantity}
+                onChange={handleInputChange}
+                error={Boolean(errors.quantity)}
+                helperText={errors.quantity}
+                inputProps={{
+                  max: selectedLot ? selectedLot.quantity : undefined,
+                  step: "0.01",
+                }}
+              />
+            </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
@@ -230,10 +297,10 @@ const TransferFormModal = ({ open, onClose, initialValues }) => {
                 rows={2}
                 name="remarks"
                 label="Remarks"
-                value={formik.values.remarks}
-                onChange={formik.handleChange}
-                error={formik.touched.remarks && Boolean(formik.errors.remarks)}
-                helperText={formik.touched.remarks && formik.errors.remarks}
+                value={formData.remarks}
+                onChange={handleInputChange}
+                error={Boolean(errors.remarks)}
+                helperText={errors.remarks}
               />
             </Grid>
           </Grid>
@@ -246,7 +313,7 @@ const TransferFormModal = ({ open, onClose, initialValues }) => {
             type="submit"
             variant="contained"
             color="primary"
-            disabled={formik.isSubmitting}
+            disabled={isSubmitting}
           >
             {initialValues ? "Update" : "Create"}
           </Button>

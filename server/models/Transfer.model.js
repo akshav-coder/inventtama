@@ -35,11 +35,6 @@ const transferSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Lot",
     },
-    status: {
-      type: String,
-      enum: ["pending", "completed", "cancelled"],
-      default: "pending",
-    },
   },
   {
     timestamps: true,

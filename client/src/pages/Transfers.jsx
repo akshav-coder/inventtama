@@ -53,7 +53,6 @@ const Transfers = () => {
     endDate: "",
     fromStorage: "",
     toStorage: "",
-    status: "",
     tamarindType: "",
   });
 
@@ -100,32 +99,6 @@ const Transfers = () => {
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "completed":
-        return "success";
-      case "pending":
-        return "warning";
-      case "cancelled":
-        return "error";
-      default:
-        return "default";
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "completed":
-        return "✓";
-      case "pending":
-        return "⏳";
-      case "cancelled":
-        return "✗";
-      default:
-        return "•";
-    }
   };
 
   return (
@@ -308,28 +281,7 @@ const Transfers = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={{ xs: 4, sm: 4, md: 4 }}>
-              <FormControl fullWidth size="medium">
-                <InputLabel>Status</InputLabel>
-                <Select
-                  name="status"
-                  value={filters.status}
-                  onChange={handleFilterChange}
-                  label="Status"
-                  sx={{
-                    borderRadius: 2,
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "primary.main",
-                    },
-                  }}
-                >
-                  <MenuItem value="">All</MenuItem>
-                  <MenuItem value="pending">Pending</MenuItem>
-                  <MenuItem value="completed">Completed</MenuItem>
-                  <MenuItem value="cancelled">Cancelled</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
+
             <Grid size={{ xs: 4, sm: 4, md: 4 }}>
               <FormControl fullWidth size="medium">
                 <InputLabel>Tamarind Type</InputLabel>
@@ -356,16 +308,17 @@ const Transfers = () => {
         </CardContent>
       </Card>
 
-      <TransferFormModal
-        open={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-          setEditItem(null);
-        }}
-        onSubmit={handleSubmit}
-        initialValues={editItem}
-      />
-
+      {modalOpen && (
+        <TransferFormModal
+          open={modalOpen}
+          onClose={() => {
+            setModalOpen(false);
+            setEditItem(null);
+          }}
+          onSubmit={handleSubmit}
+          initialValues={editItem}
+        />
+      )}
       <Dialog
         open={deleteConfirm.open}
         onClose={() => setDeleteConfirm({ open: false, id: null })}
@@ -444,9 +397,6 @@ const Transfers = () => {
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
                     Lot
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
-                    Status
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
                     Remarks
@@ -538,19 +488,7 @@ const Transfers = () => {
                         {row.lotId?.lotNumber || "-"}
                       </Typography>
                     </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={row.status}
-                        color={getStatusColor(row.status)}
-                        size="small"
-                        icon={<span>{getStatusIcon(row.status)}</span>}
-                        sx={{
-                          fontWeight: 600,
-                          borderRadius: 1,
-                          textTransform: "capitalize",
-                        }}
-                      />
-                    </TableCell>
+
                     <TableCell>
                       <Typography
                         variant="body2"
@@ -566,57 +504,55 @@ const Transfers = () => {
                       </Typography>
                     </TableCell>
                     <TableCell align="center">
-                      {row.status === "pending" && (
-                        <Stack
-                          direction="row"
-                          spacing={1}
-                          justifyContent="center"
-                        >
-                          <Tooltip title="Edit Transfer">
-                            <IconButton
-                              onClick={() => {
-                                setEditItem(row);
-                                setModalOpen(true);
-                              }}
-                              sx={{
-                                backgroundColor: alpha("#667eea", 0.1),
-                                color: "#667eea",
-                                "&:hover": {
-                                  backgroundColor: alpha("#667eea", 0.2),
-                                  transform: "scale(1.1)",
-                                  transition: "all 0.2s ease",
-                                },
-                              }}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Delete Transfer">
-                            <IconButton
-                              color="error"
-                              onClick={() =>
-                                setDeleteConfirm({ open: true, id: row._id })
-                              }
-                              sx={{
-                                backgroundColor: alpha("#f44336", 0.1),
-                                "&:hover": {
-                                  backgroundColor: alpha("#f44336", 0.2),
-                                  transform: "scale(1.1)",
-                                  transition: "all 0.2s ease",
-                                },
-                              }}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
-                      )}
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        justifyContent="center"
+                      >
+                        <Tooltip title="Edit Transfer">
+                          <IconButton
+                            onClick={() => {
+                              setEditItem(row);
+                              setModalOpen(true);
+                            }}
+                            sx={{
+                              backgroundColor: alpha("#667eea", 0.1),
+                              color: "#667eea",
+                              "&:hover": {
+                                backgroundColor: alpha("#667eea", 0.2),
+                                transform: "scale(1.1)",
+                                transition: "all 0.2s ease",
+                              },
+                            }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete Transfer">
+                          <IconButton
+                            color="error"
+                            onClick={() =>
+                              setDeleteConfirm({ open: true, id: row._id })
+                            }
+                            sx={{
+                              backgroundColor: alpha("#f44336", 0.1),
+                              "&:hover": {
+                                backgroundColor: alpha("#f44336", 0.2),
+                                transform: "scale(1.1)",
+                                transition: "all 0.2s ease",
+                              },
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
                     </TableCell>
                   </TableRow>
                 ))}
                 {(!data || data.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={9} sx={{ textAlign: "center", py: 6 }}>
+                    <TableCell colSpan={8} sx={{ textAlign: "center", py: 6 }}>
                       <Typography
                         variant="h6"
                         color="text.secondary"
