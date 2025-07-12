@@ -46,6 +46,11 @@ const TransferFormModal = ({ open, onClose, initialValues }) => {
   // Get selected lot details for quantity validation
   const selectedLot = lots.find((lot) => lot._id === formData.lotId);
 
+  // Get selected fromStorage details for unit max quantity
+  const fromStorage = storages.find((s) => s._id === formData.fromStorageId);
+  const fromUnitMaxQuantity =
+    fromStorage && fromStorage.type === "unit" ? fromStorage.quantity : null;
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -69,13 +74,15 @@ const TransferFormModal = ({ open, onClose, initialValues }) => {
 
     if (!formData.quantity) {
       newErrors.quantity = "Quantity is required";
-    } else if (parseFloat(formData.quantity) <= 0) {
+    } else if (formData.quantity <= 0) {
       newErrors.quantity = "Quantity must be greater than 0";
-    } else if (
-      selectedLot &&
-      parseFloat(formData.quantity) > selectedLot.quantity
-    ) {
+    } else if (selectedLot && formData.quantity > selectedLot.quantity) {
       newErrors.quantity = `Quantity cannot exceed available lot quantity (${selectedLot.quantity}kg)`;
+    } else if (
+      fromUnitMaxQuantity !== null &&
+      formData.quantity > fromUnitMaxQuantity
+    ) {
+      newErrors.quantity = `Quantity cannot exceed available unit quantity (${fromUnitMaxQuantity}kg)`;
     }
 
     const fromStorage = storages.find((s) => s._id === formData.fromStorageId);
@@ -91,7 +98,7 @@ const TransferFormModal = ({ open, onClose, initialValues }) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === "quantity" ? Number(value) || 0 : value,
     }));
 
     // Clear error when user starts typing
@@ -121,7 +128,10 @@ const TransferFormModal = ({ open, onClose, initialValues }) => {
 
     setIsSubmitting(true);
     try {
-      const result = await createTransfer(formData).unwrap();
+      // Remove lotId if not needed or empty
+      const payload = { ...formData };
+      if (!payload.lotId) delete payload.lotId;
+      const result = await createTransfer(payload).unwrap();
       showSnackbar("Transfer created successfully", "success");
       onClose();
     } catch (error) {
@@ -154,7 +164,7 @@ const TransferFormModal = ({ open, onClose, initialValues }) => {
         fromStorageId: "",
         toStorageId: "",
         tamarindType: "",
-        quantity: "",
+        quantity: 0,
         remarks: "",
         lotId: "",
       };
@@ -278,14 +288,22 @@ const TransferFormModal = ({ open, onClose, initialValues }) => {
                 type="number"
                 name="quantity"
                 label={`Quantity (kg)${
-                  selectedLot ? ` - Max: ${selectedLot.quantity}kg` : ""
+                  selectedLot
+                    ? ` - Max: ${selectedLot.quantity}kg`
+                    : fromUnitMaxQuantity !== null
+                    ? ` - Max: ${fromUnitMaxQuantity}kg`
+                    : ""
                 }`}
                 value={formData.quantity}
                 onChange={handleInputChange}
                 error={Boolean(errors.quantity)}
                 helperText={errors.quantity}
                 inputProps={{
-                  max: selectedLot ? selectedLot.quantity : undefined,
+                  max: selectedLot
+                    ? selectedLot.quantity
+                    : fromUnitMaxQuantity !== null
+                    ? fromUnitMaxQuantity
+                    : undefined,
                   step: "0.01",
                 }}
               />

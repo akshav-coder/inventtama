@@ -44,7 +44,7 @@ const transferSchema = new mongoose.Schema(
 );
 
 // Add index for better query performance
-transferSchema.index({ transferDate: -1 });
+transferSchema.index({ createdAt: -1 });
 
 // Virtual for total amount (if needed for future use)
 transferSchema.virtual("totalAmount").get(function () {

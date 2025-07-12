@@ -30,7 +30,7 @@ router.get("/", async (req, res) => {
       .populate("lotId", "lotNumber quantity")
       .populate({ path: "createdBy", select: "name", strictPopulate: false })
       .populate({ path: "updatedBy", select: "name", strictPopulate: false })
-      .sort({ transferDate: -1 });
+      .sort({ createdAt: -1 });
 
     res.status(200).json(transfers);
   } catch (err) {
@@ -97,7 +97,7 @@ router.post("/", async (req, res) => {
     }
 
     const transfer = new Transfer({
-      transferDate,
+      transferDate: transferDate || new Date(),
       fromStorageId,
       toStorageId,
       tamarindType,
@@ -215,7 +215,7 @@ router.put("/:id", async (req, res) => {
     const updatedTransfer = await Transfer.findByIdAndUpdate(
       req.params.id,
       {
-        transferDate,
+        transferDate: transferDate || new Date(),
         fromStorageId,
         toStorageId,
         tamarindType,

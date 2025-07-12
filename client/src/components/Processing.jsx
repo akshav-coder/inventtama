@@ -86,13 +86,16 @@ const Processing = () => {
       const [field, idx] = name.split("-");
       const newInputs = [...formData.inputs];
       newInputs[idx][field === "inputType" ? "tamarindType" : "quantity"] =
-        value;
+        field === "inputQuantity" ? Number(value) || 0 : value;
       setFormData({ ...formData, inputs: newInputs });
     } else if (name.startsWith("output")) {
       const field = name.split("-")[1];
       setFormData({
         ...formData,
-        output: { ...formData.output, [field]: value },
+        output: {
+          ...formData.output,
+          [field]: field === "quantity" ? Number(value) || 0 : value,
+        },
       });
     } else {
       setFormData({ ...formData, [name]: value });

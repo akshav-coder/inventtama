@@ -59,7 +59,7 @@ const StorageAndLotPage = () => {
   const [newLot, setNewLot] = useState({
     lotNumber: "",
     tamarindType: "",
-    quantity: "",
+    quantity: 0,
     coldStorageId: "",
   });
 
@@ -90,7 +90,7 @@ const StorageAndLotPage = () => {
     setNewLot({
       lotNumber: "",
       tamarindType: "",
-      quantity: "",
+      quantity: 0,
       coldStorageId: storage._id,
     });
   };
@@ -99,7 +99,7 @@ const StorageAndLotPage = () => {
     if (
       newLot.lotNumber &&
       newLot.tamarindType &&
-      newLot.quantity &&
+      newLot.quantity > 0 &&
       selectedStorage
     ) {
       try {
@@ -111,7 +111,7 @@ const StorageAndLotPage = () => {
         setNewLot({
           lotNumber: "",
           tamarindType: "",
-          quantity: "",
+          quantity: 0,
           coldStorageId: selectedStorage._id,
         });
       } catch (error) {
@@ -817,7 +817,10 @@ const StorageAndLotPage = () => {
                     placeholder="Eg. 1000"
                     value={newLot.quantity}
                     onChange={(e) =>
-                      setNewLot({ ...newLot, quantity: e.target.value })
+                      setNewLot({
+                        ...newLot,
+                        quantity: Number(e.target.value) || 0,
+                      })
                     }
                     helperText="Enter quantity in kilograms"
                     inputProps={{ min: 0 }}

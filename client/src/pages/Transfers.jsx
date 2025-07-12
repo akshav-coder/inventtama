@@ -381,7 +381,7 @@ const Transfers = () => {
               <TableHead>
                 <TableRow sx={{ backgroundColor: alpha("#667eea", 0.05) }}>
                   <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
-                    Date
+                    Transfer Date / Created
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
                     From
@@ -424,9 +424,14 @@ const Transfers = () => {
                     }}
                   >
                     <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {new Date(row.transferDate).toLocaleDateString()}
-                      </Typography>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {new Date(row.transferDate).toLocaleDateString()}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(row.createdAt).toLocaleTimeString()}
+                        </Typography>
+                      </Box>
                     </TableCell>
                     <TableCell>
                       <Box display="flex" alignItems="center">
