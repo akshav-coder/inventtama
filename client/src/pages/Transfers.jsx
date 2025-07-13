@@ -32,12 +32,10 @@ import {
 import {
   useGetTransfersQuery,
   useCreateTransferMutation,
-  useUpdateTransferMutation,
   useDeleteTransferMutation,
 } from "../services/unitTransferApi";
 import { useGetStoragesQuery } from "../services/storageApi";
 import { useState } from "react";
-import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import FilterListIcon from "@mui/icons-material/FilterList";
@@ -63,28 +61,11 @@ const Transfers = () => {
 
   const { data, isLoading } = useGetTransfersQuery(queryParams.toString());
   const [create] = useCreateTransferMutation();
-  const [update] = useUpdateTransferMutation();
   const [remove] = useDeleteTransferMutation();
   const showSnackbar = useSnackbar();
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [editItem, setEditItem] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, id: null });
-
-  const handleSubmit = async (formData) => {
-    try {
-      if (editItem) {
-        const result = await update({ id: editItem._id, ...formData }).unwrap();
-        showSnackbar("Transfer updated successfully", "success");
-      } else {
-        const result = await create(formData).unwrap();
-        showSnackbar("Transfer created successfully", "success");
-      }
-      setEditItem(null);
-    } catch (error) {
-      showSnackbar("Error saving transfer", "error");
-    }
-  };
 
   const handleDelete = async () => {
     try {
@@ -99,25 +80,6 @@ const Transfers = () => {
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // Helper to transform a transfer row to form initial values
-  const getTransferInitialValues = (row) => {
-    if (!row) return null;
-    return {
-      transferDate: row.transferDate
-        ? row.transferDate.split("T")[0]
-        : new Date().toISOString().split("T")[0],
-      fromStorageId: row.fromStorageId?._id || row.fromStorageId || "",
-      toStorageId: row.toStorageId?._id || row.toStorageId || "",
-      tamarindType: row.tamarindType || "",
-      quantity:
-        typeof row.quantity === "number"
-          ? row.quantity
-          : Number(row.quantity) || 0,
-      remarks: row.remarks || "",
-      lotId: row.lotId?._id || row.lotId || "",
-    };
   };
 
   return (
@@ -332,10 +294,11 @@ const Transfers = () => {
           open={modalOpen}
           onClose={() => {
             setModalOpen(false);
-            setEditItem(null);
           }}
-          onSubmit={handleSubmit}
-          initialValues={getTransferInitialValues(editItem)}
+          onSubmit={(formData) => {
+            create(formData).unwrap();
+            showSnackbar("Transfer created successfully", "success");
+          }}
         />
       )}
       <Dialog
@@ -533,25 +496,6 @@ const Transfers = () => {
                         spacing={1}
                         justifyContent="center"
                       >
-                        <Tooltip title="Edit Transfer">
-                          <IconButton
-                            onClick={() => {
-                              setEditItem(row);
-                              setModalOpen(true);
-                            }}
-                            sx={{
-                              backgroundColor: alpha("#667eea", 0.1),
-                              color: "#667eea",
-                              "&:hover": {
-                                backgroundColor: alpha("#667eea", 0.2),
-                                transform: "scale(1.1)",
-                                transition: "all 0.2s ease",
-                              },
-                            }}
-                          >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
                         <Tooltip title="Delete Transfer">
                           <IconButton
                             color="error"

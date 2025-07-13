@@ -18,7 +18,7 @@ import { useGetLotsQuery } from "../../services/lotapi";
 import { useCreateTransferMutation } from "../../services/unitTransferApi";
 import { useSnackbar } from "../common/SnackbarProvider";
 
-const TransferFormModal = ({ open, onClose, initialValues }) => {
+const TransferFormModal = ({ open, onClose, onSubmit }) => {
   const { data: storages = [] } = useGetStoragesQuery("");
   const [createTransfer] = useCreateTransferMutation();
   const showSnackbar = useSnackbar();
@@ -76,13 +76,17 @@ const TransferFormModal = ({ open, onClose, initialValues }) => {
       newErrors.quantity = "Quantity is required";
     } else if (formData.quantity <= 0) {
       newErrors.quantity = "Quantity must be greater than 0";
-    } else if (selectedLot && formData.quantity > selectedLot.quantity) {
-      newErrors.quantity = `Quantity cannot exceed available lot quantity (${selectedLot.quantity}kg)`;
-    } else if (
-      fromUnitMaxQuantity !== null &&
-      formData.quantity > fromUnitMaxQuantity
-    ) {
-      newErrors.quantity = `Quantity cannot exceed available unit quantity (${fromUnitMaxQuantity}kg)`;
+    } else {
+      if (selectedLot && formData.quantity > selectedLot.quantity) {
+        newErrors.quantity = `Quantity cannot exceed available lot quantity (${selectedLot.quantity}kg)`;
+      }
+
+      if (
+        fromUnitMaxQuantity !== null &&
+        formData.quantity > fromUnitMaxQuantity
+      ) {
+        newErrors.quantity = `Quantity cannot exceed available unit quantity (${fromUnitMaxQuantity}kg)`;
+      }
     }
 
     const fromStorage = storages.find((s) => s._id === formData.fromStorageId);
@@ -128,14 +132,11 @@ const TransferFormModal = ({ open, onClose, initialValues }) => {
 
     setIsSubmitting(true);
     try {
-      // Remove lotId if not needed or empty
-      const payload = { ...formData };
-      if (!payload.lotId) delete payload.lotId;
-      const result = await createTransfer(payload).unwrap();
+      const result = await createTransfer(formData).unwrap();
       showSnackbar("Transfer created successfully", "success");
-      onClose();
+      onSubmit(result);
     } catch (error) {
-      showSnackbar(error.data?.error || "Failed to create transfer", "error");
+      showSnackbar(error.data?.error || "Failed to save transfer", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -169,27 +170,18 @@ const TransferFormModal = ({ open, onClose, initialValues }) => {
         lotId: "",
       };
 
-      setFormData(initialValues || defaultValues);
+      setFormData(defaultValues);
       setErrors({});
       setIsSubmitting(false);
-
-      if (initialValues?.fromStorageId) {
-        const storage = storages.find(
-          (s) => s._id === initialValues.fromStorageId
-        );
-        setSelectedStorage(
-          storage?.type === "cold" ? initialValues.fromStorageId : null
-        );
-      }
     }
-  }, [open, initialValues, storages]);
+  }, [open]);
 
   // Check if "to" storage should be disabled
   const isToStorageDisabled = selectedStorage && !formData.lotId;
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-      <DialogTitle>{initialValues ? "Edit" : "Add"} Transfer</DialogTitle>
+      <DialogTitle>Add Transfer</DialogTitle>
       <form onSubmit={handleSubmit}>
         <DialogContent>
           <Grid container spacing={3}>
@@ -333,7 +325,7 @@ const TransferFormModal = ({ open, onClose, initialValues }) => {
             color="primary"
             disabled={isSubmitting}
           >
-            {initialValues ? "Update" : "Create"}
+            Create
           </Button>
         </DialogActions>
       </form>
