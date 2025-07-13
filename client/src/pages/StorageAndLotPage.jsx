@@ -63,9 +63,15 @@ const StorageAndLotPage = () => {
     coldStorageId: "",
   });
 
-  const { data: storages = [], isLoading } = useGetStoragesQuery(type);
+  const { data: storages = [], isLoading } = useGetStoragesQuery(type, {
+    refetchOnMountOrArgChange: true,
+  });
   const [createStorage] = useCreateStorageMutation();
   const [createLot] = useCreateLotMutation();
+  const { data: allLots = [] } = useGetLotsQuery("", {
+    skip: false,
+    refetchOnMountOrArgChange: true,
+  });
   const { data: lots = [] } = useGetLotsQuery(selectedStorage?._id, {
     skip: !selectedStorage,
   });
@@ -130,7 +136,10 @@ const StorageAndLotPage = () => {
 
   const getTotalQuantity = (storage) => {
     if (storage.type === "unit") return storage.quantity || 0;
-    return lots.reduce((sum, lot) => sum + (lot.quantity || 0), 0);
+    console.log(allLots);
+    return allLots
+      .filter((lot) => lot.coldStorageId._id === storage._id)
+      .reduce((sum, lot) => sum + (lot.quantity || 0), 0);
   };
 
   // Calculate summary statistics

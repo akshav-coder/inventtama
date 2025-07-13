@@ -122,6 +122,15 @@ router.post("/", async (req, res) => {
       await toStorage.save();
     }
 
+    // Decrease unit storage quantity if transfer is from a unit storage
+    if (fromStorage.type === "unit") {
+      fromStorage.quantity = Math.max(
+        0,
+        (fromStorage.quantity || 0) - quantity
+      );
+      await fromStorage.save();
+    }
+
     // Populate the response
     const populatedTransfer = await Transfer.findById(transfer._id)
       .populate("fromStorageId", "name type")

@@ -101,6 +101,25 @@ const Transfers = () => {
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Helper to transform a transfer row to form initial values
+  const getTransferInitialValues = (row) => {
+    if (!row) return null;
+    return {
+      transferDate: row.transferDate
+        ? row.transferDate.split("T")[0]
+        : new Date().toISOString().split("T")[0],
+      fromStorageId: row.fromStorageId?._id || row.fromStorageId || "",
+      toStorageId: row.toStorageId?._id || row.toStorageId || "",
+      tamarindType: row.tamarindType || "",
+      quantity:
+        typeof row.quantity === "number"
+          ? row.quantity
+          : Number(row.quantity) || 0,
+      remarks: row.remarks || "",
+      lotId: row.lotId?._id || row.lotId || "",
+    };
+  };
+
   return (
     <Box sx={{ p: 3, backgroundColor: "#f8fafc", minHeight: "100vh" }}>
       {/* Header Section */}
@@ -316,7 +335,7 @@ const Transfers = () => {
             setEditItem(null);
           }}
           onSubmit={handleSubmit}
-          initialValues={editItem}
+          initialValues={getTransferInitialValues(editItem)}
         />
       )}
       <Dialog
