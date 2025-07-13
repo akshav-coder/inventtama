@@ -304,11 +304,15 @@ const PurchaseFormModal = ({ open, onClose, onSubmit, initialValues }) => {
                 error={Boolean(formik.errors.supplierId)}
                 helperText={formik.errors.supplierId}
               >
-                {suppliers.map((s) => (
-                  <MenuItem key={s._id} value={s._id}>
-                    {s.name}
-                  </MenuItem>
-                ))}
+                {suppliers.length > 0 ? (
+                  suppliers.map((s) => (
+                    <MenuItem key={s._id} value={s._id}>
+                      {s.name}
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem disabled>No suppliers available</MenuItem>
+                )}
               </TextField>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>

@@ -101,11 +101,15 @@ const SalesFormModal = ({ open, onClose, onSubmit, initialValues }) => {
                 error={Boolean(formik.errors.customer)}
                 helperText={formik.errors.customer}
               >
-                {customers.map((c) => (
-                  <MenuItem key={c._id} value={c._id}>
-                    {c.name}
-                  </MenuItem>
-                ))}
+                {customers.length > 0 ? (
+                  customers.map((c) => (
+                    <MenuItem key={c._id} value={c._id}>
+                      {c.name}
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem disabled>No customers available</MenuItem>
+                )}
               </TextField>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>

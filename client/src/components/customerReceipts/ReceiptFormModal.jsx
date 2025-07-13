@@ -79,11 +79,15 @@ const ReceiptFormModal = ({ open, onClose, onSubmit, initialValues }) => {
                 error={Boolean(formik.errors.customer)}
                 helperText={formik.errors.customer}
               >
-                {customers.map((c) => (
-                  <MenuItem key={c._id} value={c._id}>
-                    {c.name}
-                  </MenuItem>
-                ))}
+                {customers.length > 0 ? (
+                  customers.map((c) => (
+                    <MenuItem key={c._id} value={c._id}>
+                      {c.name}
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem disabled>No customers available</MenuItem>
+                )}
               </TextField>
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -140,11 +144,15 @@ const ReceiptFormModal = ({ open, onClose, onSubmit, initialValues }) => {
                   error={formik.errors.invoices?.[idx]?.sale}
                   helperText={formik.errors.invoices?.[idx]?.sale}
                 >
-                  {sales.map((s) => (
-                    <MenuItem key={s._id} value={s._id}>
-                      {s._id}
-                    </MenuItem>
-                  ))}
+                  {sales.length > 0 ? (
+                    sales.map((s) => (
+                      <MenuItem key={s._id} value={s._id}>
+                        {s._id}
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem disabled>No sales available</MenuItem>
+                  )}
                 </TextField>
               </Grid>
               <Grid item xs={12} sm={4}>

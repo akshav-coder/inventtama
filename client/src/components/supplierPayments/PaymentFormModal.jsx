@@ -1,4 +1,13 @@
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid, TextField, MenuItem } from "@mui/material";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Grid,
+  TextField,
+  MenuItem,
+} from "@mui/material";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { useGetSuppliersQuery } from "../../services/suppliersApi";
@@ -48,11 +57,15 @@ const PaymentFormModal = ({ open, onClose, onSubmit, initialValues }) => {
                 error={Boolean(formik.errors.supplier)}
                 helperText={formik.errors.supplier}
               >
-                {suppliers.map((s) => (
-                  <MenuItem key={s._id} value={s._id}>
-                    {s.name}
-                  </MenuItem>
-                ))}
+                {suppliers.length > 0 ? (
+                  suppliers.map((s) => (
+                    <MenuItem key={s._id} value={s._id}>
+                      {s.name}
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem disabled>No suppliers available</MenuItem>
+                )}
               </TextField>
             </Grid>
             <Grid item xs={12} sm={6}>

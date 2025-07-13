@@ -224,12 +224,14 @@ const Transfers = () => {
                   <MenuItem value="">All</MenuItem>
                   {storagesLoading ? (
                     <MenuItem disabled>Loading...</MenuItem>
-                  ) : (
+                  ) : storages.length > 0 ? (
                     storages.map((storage) => (
                       <MenuItem key={storage._id} value={storage._id}>
                         {storage.name}
                       </MenuItem>
                     ))
+                  ) : (
+                    <MenuItem disabled>No storages available</MenuItem>
                   )}
                 </Select>
               </FormControl>
@@ -252,12 +254,14 @@ const Transfers = () => {
                   <MenuItem value="">All</MenuItem>
                   {storagesLoading ? (
                     <MenuItem disabled>Loading...</MenuItem>
-                  ) : (
+                  ) : storages.length > 0 ? (
                     storages.map((storage) => (
                       <MenuItem key={storage._id} value={storage._id}>
                         {storage.name}
                       </MenuItem>
                     ))
+                  ) : (
+                    <MenuItem disabled>No storages available</MenuItem>
                   )}
                 </Select>
               </FormControl>

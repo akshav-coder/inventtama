@@ -742,11 +742,17 @@ const Processing = () => {
                     borderRadius: 2,
                   }}
                 >
-                  {manufacturingUnits.map((unit) => (
-                    <MenuItem key={unit._id} value={unit._id}>
-                      {unit.name}
+                  {manufacturingUnits.length > 0 ? (
+                    manufacturingUnits.map((unit) => (
+                      <MenuItem key={unit._id} value={unit._id}>
+                        {unit.name}
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem disabled>
+                      No manufacturing units available
                     </MenuItem>
-                  ))}
+                  )}
                 </Select>
               </FormControl>
 

@@ -207,11 +207,15 @@ const TransferFormModal = ({ open, onClose, onSubmit }) => {
                   onChange={handleStorageChange}
                   label="From Storage"
                 >
-                  {storages.map((storage) => (
-                    <MenuItem key={storage._id} value={storage._id}>
-                      {storage.name} ({storage.type})
-                    </MenuItem>
-                  ))}
+                  {storages.length > 0 ? (
+                    storages.map((storage) => (
+                      <MenuItem key={storage._id} value={storage._id}>
+                        {storage.name} ({storage.type})
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem disabled>No storages available</MenuItem>
+                  )}
                 </Select>
                 <FormHelperText>{errors.fromStorageId}</FormHelperText>
               </FormControl>
@@ -226,11 +230,15 @@ const TransferFormModal = ({ open, onClose, onSubmit }) => {
                     onChange={handleInputChange}
                     label="Lot Number"
                   >
-                    {lots.map((lot) => (
-                      <MenuItem key={lot._id} value={lot._id}>
-                        {lot.lotNumber} (Available: {lot.quantity}kg)
-                      </MenuItem>
-                    ))}
+                    {lots.length > 0 ? (
+                      lots.map((lot) => (
+                        <MenuItem key={lot._id} value={lot._id}>
+                          {lot.lotNumber} (Available: {lot.quantity}kg)
+                        </MenuItem>
+                      ))
+                    ) : (
+                      <MenuItem disabled>No lots available</MenuItem>
+                    )}
                   </Select>
                   <FormHelperText>{errors.lotId}</FormHelperText>
                 </FormControl>
@@ -246,11 +254,15 @@ const TransferFormModal = ({ open, onClose, onSubmit }) => {
                   label="To Storage"
                   disabled={isToStorageDisabled}
                 >
-                  {unitStorages.map((storage) => (
-                    <MenuItem key={storage._id} value={storage._id}>
-                      {storage.name} ({storage.type})
-                    </MenuItem>
-                  ))}
+                  {unitStorages.length > 0 ? (
+                    unitStorages.map((storage) => (
+                      <MenuItem key={storage._id} value={storage._id}>
+                        {storage.name} ({storage.type})
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem disabled>No unit storages available</MenuItem>
+                  )}
                 </Select>
                 <FormHelperText>
                   {errors.toStorageId ||
